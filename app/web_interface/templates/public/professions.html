@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Professions{% endblock %}
+
+{% block content %}
+<h1>Professions</h1>
+<table id="professionsTable" class="public-table">
+    <thead><tr><th>ID</th><th>Nom</th><th>Subclasses</th><th>Biomes</th></tr></thead>
+    <tbody></tbody>
+</table>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/public_tables.js"></script>
+<script>
+loadPublicTable("/public/professions", "professionsTable", item => ({
+    id: item.id || item["id"],
+    name: item.name || item["name"],
+    subclasses: (item.subclasses || item["subclasses"] || []).join(", "),
+    biomes: (item.biomes || item["biomes"] || []).join(", ")
+}));
+</script>
+{% endblock %}

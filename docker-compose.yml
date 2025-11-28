@@ -1,0 +1,16 @@
+services:
+  python:
+    container_name: python
+    build: .
+    ports:
+      - "5000:80"
+    volumes:
+        - ./app:/app
+    restart: always
+    networks:
+        - proxy
+        
+networks:
+    proxy:
+        name: dev
+        external: true

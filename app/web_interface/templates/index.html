@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+
+{% block title %}Accueil{% endblock %}
+
+{% block content %}
+<h1>Bienvenue dans le Craft Game</h1>
+
+<p>Références publiques :</p>
+<ul>
+    <li><a href="/public/resources">Liste des ressources (ingredients)</a></li>
+    <li><a href="/public/recipes">Liste des recettes</a></li>
+    <li><a href="/public/professions">Liste des professions</a></li>
+</ul>
+
+<p>Mon compte :</p>
+<ul>
+    <li><a href="/login">Se connecter</a></li>
+    <li><a href="/register">S'inscrire</a></li>
+</ul>
+{% endblock %}

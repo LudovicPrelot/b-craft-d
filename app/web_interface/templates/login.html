@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Connexion{% endblock %}
+
+{% block content %}
+<h1>Se connecter</h1>
+<form id="loginForm">
+    <label>Login: <input name="login"></label><br>
+    <label>Mot de passe: <input name="password" type="password"></label><br>
+    <button>Connexion</button>
+</form>
+<script>
+document.getElementById('loginForm').onsubmit = async (e) => {
+    e.preventDefault();
+    const f = new FormData(e.target);
+    const res = await fetch('/auth/login', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({login: f.get('login'), password: f.get('password')})
+    });
+    if(!res.ok){ alert('Erreur connexion'); return; }
+    const j = await res.json();
+    localStorage.setItem('access_token', j.access_token);
+    localStorage.setItem('refresh_token', j.refresh_token);
+    alert('Connecté');
+    window.location.href = "/";
+};
+</script>
+{% endblock %}

@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Ressources{% endblock %}
+
+{% block content %}
+<h1>Ressources (ingredients)</h1>
+<table id="resourcesTable" class="public-table">
+    <thead><tr><th>ID</th><th>Nom</th><th>Description</th></tr></thead>
+    <tbody></tbody>
+</table>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/public_tables.js"></script>
+<script>
+loadPublicTable("/public/resources", "resourcesTable", item => ({
+    id: item.id || item["id"],
+    name: item.name || item["name"],
+    description: item.description || item.get("description","")
+}));
+</script>
+{% endblock %}

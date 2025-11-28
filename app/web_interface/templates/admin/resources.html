@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Admin — Ressources{% endblock %}
+
+{% block content %}
+<h1>Gestion des ressources</h1>
+<button id="refresh">Rafraîchir</button>
+<pre id="out"></pre>
+
+<form id="formCreate">
+  <input name="id" placeholder="id" required>
+  <input name="name" placeholder="name" required>
+  <input name="description" placeholder="description">
+  <button>Créer</button>
+</form>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.getElementById('refresh').onclick = async ()=>{
+  const r = await fetch('/resources/', { headers: {'Authorization':'Bearer '+localStorage.getItem('access_token')} });
+  const j = await r.json();
+  document.getElementById('out').textContent = JSON.stringify(j, null, 2);
+};
+document.getElementById('formCreate').onsubmit = async e=>{
+  e.preventDefault();
+  const f = new FormData(e.target);
+  const body = { id: f.get('id'), name: f.get('name'), description: f.get('description') };
+  const r = await fetch('/resources/', { method:'POST', headers: {'Content-Type':'application/json','Authorization':'Bearer '+localStorage.getItem('access_token')}, body: JSON.stringify(body) });
+  if(r.ok){ alert('created'); document.getElementById('refresh').click(); } else alert('Erreur');
+};
+</script>
+{% endblock %}

@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Admin — Utilisateurs{% endblock %}
+
+{% block content %}
+<h1>Gestion des utilisateurs</h1>
+<button id="refresh">Rafraîchir</button>
+<table id="usersTable"><thead><tr><th>id</th><th>login</th><th>mail</th><th>xp</th><th>level</th><th>actions</th></tr></thead><tbody></tbody></table>
+
+<form id="createForm">
+  <input name="firstname" placeholder="firstname" required>
+  <input name="lastname" placeholder="lastname" required>
+  <input name="mail" placeholder="mail" required>
+  <input name="login" placeholder="login" required>
+  <input name="password" placeholder="password" required>
+  <input name="profession" placeholder="profession">
+  <input name="biome" placeholder="biome">
+  <button>Créer</button>
+</form>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/admin_users.js"></script>
+{% endblock %}

@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Admin — Loot{% endblock %}
+
+{% block content %}
+<h1>Gestion des loot tables</h1>
+<button id="refresh">Rafraîchir</button>
+<pre id="out"></pre>
+
+<form id="formCreate">
+  <input name="key" placeholder="table key (ex: forest)" required>
+  <textarea name="payload" placeholder='{"biomes":["forest"], "table":[{"item":"wood","weight":50,"min":1,"max":3,"rarity":"common"}]}'></textarea>
+  <button>Créer / Mettre à jour</button>
+</form>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/admin_loot.js"></script>
+{% endblock %}

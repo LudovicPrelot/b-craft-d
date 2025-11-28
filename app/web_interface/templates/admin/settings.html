@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Admin — Paramètres{% endblock %}
+
+{% block content %}
+<h1>Paramètres du jeu</h1>
+<form id="settingsForm" class="admin-form">
+    <label><input type="checkbox" name="enable_loot"> Activer loot</label><br>
+    <label><input type="checkbox" name="enable_stats"> Activer stats</label><br>
+    <label><input type="checkbox" name="enable_quests"> Activer quêtes</label><br>
+    <button>Sauvegarder</button>
+</form>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/admin_settings.js"></script>
+{% endblock %}

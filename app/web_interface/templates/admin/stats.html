@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Admin — Stats{% endblock %}
+
+{% block content %}
+<h1>Stats & XP</h1>
+<label>User id: <input id="userId"></label>
+<button id="getUser">Charger</button>
+<pre id="userOut"></pre>
+
+<form id="grantForm">
+  <input name="amount" type="number" value="100" required>
+  <button>Grant XP</button>
+</form>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/admin_stats.js"></script>
+{% endblock %}

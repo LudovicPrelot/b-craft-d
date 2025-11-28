@@ -1,0 +1,20 @@
+{
+  "default": {
+    "biomes": ["plaines", "montagne", "marais", "forêt"],
+    "table": [
+      {"item": "argile", "weight": 40, "min": 1, "max": 3, "rarity": "common"},
+      {"item": "calcaire", "weight": 30, "min": 1, "max": 2, "rarity": "common"},
+      {"item": "fer", "weight": 15, "min": 1, "max": 1, "rarity": "uncommon"},
+      {"item": "or", "weight": 8, "min": 1, "max": 1, "rarity": "rare"},
+      {"item": "éclat d'émeraude", "weight": 2, "min": 1, "max": 1, "rarity": "legendary"}
+    ]
+  },
+  "foret": {
+    "biomes": ["forêt"],
+    "table": [
+      {"item": "bois", "weight": 50, "min": 1, "max": 4, "rarity": "common"},
+      {"item": "herbe", "weight": 30, "min": 1, "max": 3, "rarity": "common"},
+      {"item": "champignon rare", "weight": 10, "min": 1, "max": 1, "rarity": "uncommon"}
+    ]
+  }
+}

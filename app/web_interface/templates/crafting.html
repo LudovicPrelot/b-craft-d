@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}Atelier de crafting{% endblock %}
+
+{% block content %}
+<h1>Atelier</h1>
+<button id="refreshRecipes">Recettes possibles</button>
+<pre id="invPre"></pre>
+<ul id="recipesList"></ul>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/crafting.js"></script>
+{% endblock %}

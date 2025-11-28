@@ -1,0 +1,18 @@
+{
+  "season_modifiers": {
+    "spring": 1.1,
+    "summer": 1.0,
+    "autumn": 0.9,
+    "winter": 0.8
+  },
+  "weather_modifiers": {
+    "sunny": 1.0,
+    "rain": 1.2,
+    "storm": 1.5,
+    "snow": 0.7
+  },
+  "event_modifiers": {
+    "meteor_shower": 3.0,
+    "eclipse": 2.0
+  }
+}

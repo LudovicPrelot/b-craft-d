@@ -1,0 +1,13 @@
+{
+  "gather_wood": {
+    "id": "gather_wood",
+    "name": "Collecter du bois",
+    "requirements": {
+      "collect": { "wood": 10 }
+    },
+    "reward": {
+      "xp": 100,
+      "items": { "coin": 5 }
+    }
+  }
+}
