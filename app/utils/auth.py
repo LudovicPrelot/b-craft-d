@@ -1,114 +1,125 @@
-from datetime import datetime, timedelta
-from typing import Dict, Any, Optional
-from jose import jwt, JWTError
-from passlib.context import CryptContext
-import uuid
+# app/utils/auth.py
+"""
+Utilities for password hashing and JWT-like access tokens.
+Implementation uses:
+ - PBKDF2-HMAC-SHA256 for password hashing (stdlib)
+ - HMAC-SHA256 for token signature (stdlib)
+Tokens follow the header.payload.signature base64url pattern (compatible conceptually with JWT).
+No external dependencies required.
+"""
+
+from __future__ import annotations
+import os
 import json
+import base64
+import hashlib
+import hmac
+import time
+from typing import Optional, Dict, Any
 
-from pathlib import Path
-import config  # <— NEW: centralised env & paths
+from app.config import JWT_SECRET_KEY, ACCESS_TOKEN_EXPIRE_MIN  # must exist in config.py
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+# --- Password hashing (PBKDF2) ------------------------------------------------
 
-
-def _load_refresh_store() -> Dict[str, Any]:
-    if not config.REFRESH_TOKENS_FILE.exists():
-        return {}
-    try:
-        return json.loads(config.REFRESH_TOKENS_FILE.read_text(encoding="utf-8"))
-    except Exception:
-        return {}
+PBKDF2_ITERATIONS = int(os.getenv("PBKDF2_ITERATIONS", "260000"))
+SALT_SIZE = int(os.getenv("PWD_SALT_SIZE", "16"))  # bytes
+HASH_NAME = "sha256"
 
 
-def _save_refresh_store(data: Dict[str, Any]) -> None:
-    config.REFRESH_TOKENS_FILE.parent.mkdir(parents=True, exist_ok=True)
-    config.REFRESH_TOKENS_FILE.write_text(
-        json.dumps(data, indent=4, ensure_ascii=False), encoding="utf-8"
-    )
+def _b64url_encode(data: bytes) -> str:
+    return base64.urlsafe_b64encode(data).rstrip(b"=").decode("ascii")
+
+
+def _b64url_decode(data: str) -> bytes:
+    padding = "=" * (-len(data) % 4)
+    return base64.urlsafe_b64decode(data + padding)
 
 
 def hash_password(password: str) -> str:
-    return pwd_context.hash(password)
+    """
+    Hash a password and return a string containing salt + iterations + hash in a single token.
+    Format: pbkdf2$iterations$salt_b64$hash_b64
+    """
+    if not isinstance(password, (str, bytes)):
+        raise TypeError("password must be str or bytes")
+    if isinstance(password, str):
+        password = password.encode("utf-8")
+
+    salt = os.urandom(SALT_SIZE)
+    dk = hashlib.pbkdf2_hmac(HASH_NAME, password, salt, PBKDF2_ITERATIONS)
+    return f"pbkdf2${PBKDF2_ITERATIONS}${_b64url_encode(salt)}${_b64url_encode(dk)}"
 
 
 def verify_password(password: str, hashed: str) -> bool:
+    """
+    Verify a password against the stored hash (our own format).
+    """
     try:
-        return pwd_context.verify(password, hashed)
+        parts = hashed.split("$")
+        if len(parts) != 4 or parts[0] != "pbkdf2":
+            return False
+        iterations = int(parts[1])
+        salt = _b64url_decode(parts[2])
+        stored = _b64url_decode(parts[3])
     except Exception:
         return False
 
+    if isinstance(password, str):
+        password = password.encode("utf-8")
 
-def create_access_token(subject: Dict[str, Any]) -> str:
-    expire = datetime.utcnow() + timedelta(minutes=config.ACCESS_TOKEN_EXPIRE_MIN)
-    payload = {
-        **subject,
-        "exp": expire,
-        "type": "access",
-        "iat": datetime.utcnow()
-    }
-    return jwt.encode(payload, config.JWT_SECRET_KEY, algorithm=config.JWT_ALGORITHM)
+    dk = hashlib.pbkdf2_hmac(HASH_NAME, password, salt, iterations)
+    return hmac.compare_digest(dk, stored)
 
 
-def create_refresh_token(subject: Dict[str, Any], device_info=None) -> str:
-    jti = str(uuid.uuid4())
-    expire = datetime.utcnow() + timedelta(days=config.REFRESH_TOKEN_EXPIRE_DAYS)
+# --- Simple JWT-like tokens (HMAC-SHA256) ------------------------------------
 
-    payload = {
-        **subject,
-        "exp": expire,
-        "type": "refresh",
-        "iat": datetime.utcnow(),
-        "jti": jti
-    }
-
-    token = jwt.encode(payload, config.JWT_SECRET_KEY, algorithm=config.JWT_ALGORITHM)
-
-    # store metadata for multi-device
-    store = _load_refresh_store()
-    store[jti] = {
-        "user_id": subject.get("user_id"),
-        "device_id": device_info.get("device_id") if device_info else None,
-        "user_agent": device_info.get("user_agent") if device_info else None,
-        "ip": device_info.get("ip") if device_info else None,
-        "created_at": datetime.utcnow().isoformat(),
-        "expires_at": expire.isoformat(),
-    }
-
-    _save_refresh_store(store)
-    return token
+ALGO = "HS256"
 
 
-def decode_token(token: str) -> Dict[str, Any]:
+def _jwt_sign(message: bytes, key: bytes) -> bytes:
+    return hmac.new(key, message, hashlib.sha256).digest()
+
+
+def create_access_token(data: Dict[str, Any], expires_delta_minutes: Optional[int] = None) -> str:
+    """
+    Create a signed token with exp claim (minutes).
+    data: payload dict (will be copied)
+    returns: token string header.payload.signature (base64url)
+    """
+    header = {"alg": ALGO, "typ": "JWT"}
+    payload = dict(data)
+    now = int(time.time())
+    exp = now + (expires_delta_minutes or ACCESS_TOKEN_EXPIRE_MIN or 60)
+    payload.update({"iat": now, "exp": exp})
+
+    header_b = _b64url_encode(json.dumps(header, separators=(",", ":"), sort_keys=True).encode("utf-8"))
+    payload_b = _b64url_encode(json.dumps(payload, separators=(",", ":"), sort_keys=True).encode("utf-8"))
+    signing_input = f"{header_b}.{payload_b}".encode("utf-8")
+    sig = _jwt_sign(signing_input, JWT_SECRET_KEY.encode("utf-8"))
+    sig_b = _b64url_encode(sig)
+    return f"{header_b}.{payload_b}.{sig_b}"
+
+
+def decode_access_token(token: str) -> Optional[Dict[str, Any]]:
+    """
+    Decode and validate token. Returns payload dict or None if invalid/expired.
+    """
     try:
-        return jwt.decode(token, config.JWT_SECRET_KEY, algorithms=[config.JWT_ALGORITHM])
-    except JWTError:
-        raise ValueError("Token invalide")
+        header_b, payload_b, sig_b = token.split(".")
+    except Exception:
+        return None
 
-
-def validate_refresh_token(token: str) -> Dict[str, Any]:
-    payload = decode_token(token)
-    if payload.get("type") != "refresh":
-        raise ValueError("Mauvais type de token (refresh attendu)")
-    jti = payload.get("jti")
-    if not jti:
-        raise ValueError("Token refresh sans JTI")
-
-    store = _load_refresh_store()
-    if jti not in store:
-        raise ValueError("Refresh token révoqué ou inconnu")
-
-    return payload
-
-
-def revoke_refresh_token_jti(jti: str):
-    store = _load_refresh_store()
-    if jti in store:
-        del store[jti]
-        _save_refresh_store(store)
-
-
-def rotate_refresh_token(old_token: str, subject: Dict[str, Any], device_info=None):
-    payload = decode_token(old_token)
-    if "jti" in payload:
-        revoke_refresh_token_jti(payload["jti"])
-    return create_refresh_token(subject, device_info)
+    try:
+        signing_input = f"{header_b}.{payload_b}".encode("utf-8")
+        expected_sig = _jwt_sign(signing_input, JWT_SECRET_KEY.encode("utf-8"))
+        actual_sig = _b64url_decode(sig_b)
+        if not hmac.compare_digest(expected_sig, actual_sig):
+            return None
+        payload_json = _b64url_decode(payload_b)
+        payload = json.loads(payload_json)
+        exp = int(payload.get("exp", 0))
+        if exp < int(time.time()):
+            return None
+        return payload
+    except Exception:
+        return None
