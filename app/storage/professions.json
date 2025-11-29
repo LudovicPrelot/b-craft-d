@@ -20,7 +20,7 @@
     "id": "bûcheron",
     "name": "Bûcheron",
     "resources_found": ["bois"],
-    "allowed_recipes": [],
+    "allowed_recipes": ["planche_bois"],
     "subclasses": ["forestier", "menuisier", "ébéniste"]
   },
 
@@ -92,7 +92,7 @@
     "id": "vigneron",
     "name": "Vigneron",
     "resources_found": ["raisins"],
-    "allowed_recipes": ["vin"],
+    "allowed_recipes": ["vin", "jus_raisin"],
     "subclasses": ["œnologue"]
   },
 
@@ -117,6 +117,30 @@
     "name": "Maître Artisan",
     "resources_found": [],
     "allowed_recipes": ["objet_luxe"],
-    "subclasses": ["orfèvre_master", "maitre_ebéniste"]
+    "subclasses": ["orfèvre_master", "maitre_ebeniste"]
+  },
+
+  "meunier": {
+    "id": "meunier",
+    "name": "Meunier",
+    "resources_found": [],
+    "allowed_recipes": ["farine"],
+    "subclasses": ["maître_meunier"]
+  },
+
+  "fileur": {
+    "id": "fileur",
+    "name": "Fileur",
+    "resources_found": ["lin", "coton", "laine"],
+    "allowed_recipes": ["fil_lin"],
+    "subclasses": []
+  },
+
+  "tisserand": {
+    "id": "tisserand",
+    "name": "Tisserand",
+    "resources_found": [],
+    "allowed_recipes": ["tissu_lin"],
+    "subclasses": ["maître_tisserand"]
   }
 }

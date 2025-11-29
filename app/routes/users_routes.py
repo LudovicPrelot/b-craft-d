@@ -1,22 +1,4 @@
 # app/routes/users_routes.py
-"""
-Chemin : app/routes/users_routes.py
-
-Routes CRUD pour les utilisateurs :
-- POST /api/users           -> création (inscription)
-- GET  /api/users/me        -> informations du user connecté
-- GET  /api/users           -> liste (admin)
-- GET  /api/users/{id}      -> lecture (admin)
-- PUT  /api/users/{id}      -> modification (admin)
-- DELETE /api/users/{id}    -> suppression (admin)
-
-Utilise :
-- utils.json.load_json / save_json
-- utils.auth.hash_password
-- dépendances : utils.deps.get_current_user_required
-- rôles : utils.roles.require_admin
-- config.USERS_FILE
-"""
 
 from fastapi import APIRouter, HTTPException, Body, Depends
 from typing import Dict, Any, Optional
@@ -27,8 +9,11 @@ from utils.json import load_json, save_json
 from utils.auth import hash_password
 from utils.deps import get_current_user_required
 from utils.roles import require_admin
+from utils.logger import get_logger
 
-router = APIRouter(prefix="/api/users", tags=["users"])
+logger = get_logger(__name__)
+
+router = APIRouter(prefix="/api/users", tags=["Users"])
 
 USERS_FILE = config.USERS_FILE
 
@@ -56,8 +41,11 @@ def create_user(payload: Dict[str, Any] = Body(...)):
     """
     login = payload.get("login")
     password = payload.get("password")
+    
+    logger.info(f"📝 Inscription d'un nouvel utilisateur: {login}")
 
     if not login or not password:
+        logger.warning("⚠️  Inscription refusée: login ou password manquant")
         raise HTTPException(status_code=400, detail="login and password required")
 
     users = _load_users()
@@ -65,26 +53,36 @@ def create_user(payload: Dict[str, Any] = Body(...)):
     # ensure unique login
     for uid, u in users.items():
         if u.get("login") == login:
+            logger.warning(f"⚠️  Inscription refusée: login '{login}' déjà utilisé")
             raise HTTPException(status_code=400, detail="login already exists")
 
     uid = str(uuid4())
-    user_obj = {
-        "firstname": payload.get("firstname", ""),
-        "lastname": payload.get("lastname", ""),
-        "mail": payload.get("mail", ""),
-        "login": login,
-        "password_hash": hash_password(password),
-        "profession": payload.get("profession", ""),
-        "subclasses": payload.get("subclasses", []),
-        "is_admin": bool(payload.get("is_admin", False)),
-        "is_moderator": bool(payload.get("is_moderator", False))
-    }
-    users[uid] = user_obj
-    _save_users(users)
+    logger.debug(f"   → Génération de l'ID utilisateur: {uid}")
+    
+    try:
+        user_obj = {
+            "firstname": payload.get("firstname", ""),
+            "lastname": payload.get("lastname", ""),
+            "mail": payload.get("mail", ""),
+            "login": login,
+            "password_hash": hash_password(password),
+            "profession": payload.get("profession", ""),
+            "subclasses": payload.get("subclasses", []),
+            "is_admin": bool(payload.get("is_admin", False)),
+            "is_moderator": bool(payload.get("is_moderator", False))
+        }
+        users[uid] = user_obj
+        _save_users(users)
 
-    safe = dict(user_obj)
-    safe.pop("password_hash", None)
-    return {"id": uid, "user": safe}
+        safe = dict(user_obj)
+        safe.pop("password_hash", None)
+        
+        logger.info(f"✅ Utilisateur '{login}' créé avec succès (id: {uid})")
+        return {"id": uid, "user": safe}
+        
+    except Exception as e:
+        logger.error(f"❌ Erreur lors de la création de l'utilisateur '{login}'", exc_info=True)
+        raise HTTPException(500, "Failed to create user")
 
 # --------------------------------------------------------------------
 # Current user
@@ -94,6 +92,9 @@ def me(user = Depends(get_current_user_required)):
     """
     Return current user info (without password_hash).
     """
+    user_id = user.get("id") if isinstance(user, dict) else getattr(user, "id", None)
+    logger.debug(f"👤 Récupération du profil pour user_id={user_id}")
+    
     # user can be dict or dataclass
     if isinstance(user, dict):
         safe = dict(user)
@@ -116,58 +117,108 @@ def me(user = Depends(get_current_user_required)):
 # --------------------------------------------------------------------
 @router.get("/", dependencies=[Depends(require_admin)])
 def list_users():
-    users = _load_users()
-    out = []
-    for uid, u in users.items():
-        safe = dict(u)
-        safe.pop("password_hash", None)
-        safe["id"] = uid
-        out.append(safe)
-    return out
+    logger.info("👥 Admin: Liste de tous les utilisateurs")
+    
+    try:
+        users = _load_users()
+        out = []
+        for uid, u in users.items():
+            safe = dict(u)
+            safe.pop("password_hash", None)
+            safe["id"] = uid
+            out.append(safe)
+        
+        logger.debug(f"   → {len(out)} utilisateur(s) trouvé(s)")
+        return out
+        
+    except Exception as e:
+        logger.error("❌ Erreur lors de la récupération des utilisateurs", exc_info=True)
+        raise HTTPException(500, "Failed to retrieve users")
 
 # --------------------------------------------------------------------
 # Admin: get user
 # --------------------------------------------------------------------
 @router.get("/{user_id}", dependencies=[Depends(require_admin)])
 def get_user(user_id: str):
-    users = _load_users()
-    u = users.get(user_id)
-    if not u:
-        raise HTTPException(status_code=404, detail="User not found")
-    safe = dict(u)
-    safe.pop("password_hash", None)
-    safe["id"] = user_id
-    return safe
+    logger.info(f"👤 Admin: Récupération de l'utilisateur {user_id}")
+    
+    try:
+        users = _load_users()
+        u = users.get(user_id)
+        if not u:
+            logger.warning(f"⚠️  Utilisateur {user_id} non trouvé")
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        safe = dict(u)
+        safe.pop("password_hash", None)
+        safe["id"] = user_id
+        
+        logger.debug(f"   → Utilisateur {user_id} récupéré")
+        return safe
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"❌ Erreur lors de la récupération de l'utilisateur {user_id}", exc_info=True)
+        raise HTTPException(500, "Failed to retrieve user")
 
 # --------------------------------------------------------------------
 # Admin: update user
 # --------------------------------------------------------------------
 @router.put("/{user_id}", dependencies=[Depends(require_admin)])
 def update_user(user_id: str, payload: Dict[str, Any] = Body(...)):
-    users = _load_users()
-    u = users.get(user_id)
-    if not u:
-        raise HTTPException(status_code=404, detail="User not found")
-    # apply allowed updates (admin can set roles)
-    allowed = ("firstname", "lastname", "mail", "profession", "subclasses", "is_admin", "is_moderator")
-    for key in allowed:
-        if key in payload:
-            u[key] = payload[key]
-    users[user_id] = u
-    _save_users(users)
-    safe = dict(u)
-    safe.pop("password_hash", None)
-    safe["id"] = user_id
-    return safe
+    logger.info(f"✏️  Admin: Mise à jour de l'utilisateur {user_id}")
+    logger.debug(f"   → Champs à mettre à jour: {list(payload.keys())}")
+    
+    try:
+        users = _load_users()
+        u = users.get(user_id)
+        if not u:
+            logger.warning(f"⚠️  Utilisateur {user_id} non trouvé")
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        # apply allowed updates (admin can set roles)
+        allowed = ("firstname", "lastname", "mail", "profession", "subclasses", "is_admin", "is_moderator")
+        for key in allowed:
+            if key in payload:
+                u[key] = payload[key]
+        
+        users[user_id] = u
+        _save_users(users)
+        
+        safe = dict(u)
+        safe.pop("password_hash", None)
+        safe["id"] = user_id
+        
+        logger.info(f"✅ Utilisateur {user_id} mis à jour avec succès")
+        return safe
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"❌ Erreur lors de la mise à jour de l'utilisateur {user_id}", exc_info=True)
+        raise HTTPException(500, "Failed to update user")
 
 # --------------------------------------------------------------------
 # Admin: delete user
 # --------------------------------------------------------------------
 @router.delete("/{user_id}", dependencies=[Depends(require_admin)])
 def delete_user(user_id: str):
-    users = _load_users()
-    if user_id in users:
-        users.pop(user_id)
-        _save_users(users)
-        return {"deleted": user_id}
-    raise HTTPException(status_code=404, detail="User not found")
+    logger.info(f"🗑️  Admin: Suppression de l'utilisateur {user_id}")
+    
+    try:
+        users = _load_users()
+        if user_id in users:
+            users.pop(user_id)
+            _save_users(users)
+            logger.info(f"✅ Utilisateur {user_id} supprimé avec succès")
+            return {"deleted": user_id}
+        
+        logger.warning(f"⚠️  Utilisateur {user_id} non trouvé")
+        raise HTTPException(status_code=404, detail="User not found")
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"❌ Erreur lors de la suppression de l'utilisateur {user_id}", exc_info=True)
+        raise HTTPException(500, "Failed to delete user")

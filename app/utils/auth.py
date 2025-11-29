@@ -27,12 +27,16 @@ import hmac
 import time
 from typing import Optional, Dict, Any, List
 
+from dotenv import load_dotenv
+
 from config import (
     JWT_SECRET_KEY,
     ACCESS_TOKEN_EXPIRE_MIN,
     REFRESH_TOKEN_EXPIRE_DAYS,
     REFRESH_TOKENS_FILE,
 )
+
+load_dotenv()  # reads variables from a .env file and sets them in os.environ
 
 # ---------------------------------------------------------------------------
 # Parameters
