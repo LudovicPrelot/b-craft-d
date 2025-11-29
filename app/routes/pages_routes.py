@@ -3,8 +3,8 @@
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
-from utils.deps import require_user
-from utils.roles import require_role_admin
+from utils.roles import require_player
+from utils.roles import require_admin
 import os
 
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))
@@ -43,56 +43,56 @@ def public_professions(request: Request):
 # User pages (auth required)
 # -------------------------
 @router.get("/me", response_class=HTMLResponse)
-def me_page(request: Request, user=Depends(require_user)):
+def me_page(request: Request, user=Depends(require_player)):
     return templates.TemplateResponse("me.html", {"request": request, "user": user})
 
 @router.get("/profile", response_class=HTMLResponse)
-def profile_page(request: Request, user=Depends(require_user)):
+def profile_page(request: Request, user=Depends(require_player)):
     return templates.TemplateResponse("profile.html", {"request": request, "user": user})
 
 @router.get("/inventory", response_class=HTMLResponse)
-def inventory_page(request: Request, user=Depends(require_user)):
+def inventory_page(request: Request, user=Depends(require_player)):
     return templates.TemplateResponse("inventory.html", {"request": request})
 
 @router.get("/crafting", response_class=HTMLResponse)
-def crafting_page(request: Request, user=Depends(require_user)):
+def crafting_page(request: Request, user=Depends(require_player)):
     return templates.TemplateResponse("crafting.html", {"request": request})
 
 @router.get("/devices", response_class=HTMLResponse)
-def devices_page(request: Request, user=Depends(require_user)):
+def devices_page(request: Request, user=Depends(require_player)):
     return templates.TemplateResponse("devices.html", {"request": request})
 
 # -------------------------
 # Admin pages (admin only)
 # -------------------------
-@router.get("/admin", response_class=HTMLResponse, dependencies=[Depends(require_role_admin)])
+@router.get("/admin", response_class=HTMLResponse, dependencies=[Depends(require_admin)])
 def admin_index(request: Request):
     return templates.TemplateResponse("admin/index.html", {"request": request})
 
-@router.get("/admin/users", response_class=HTMLResponse, dependencies=[Depends(require_role_admin)])
+@router.get("/admin/users", response_class=HTMLResponse, dependencies=[Depends(require_admin)])
 def admin_users(request: Request):
     return templates.TemplateResponse("admin/users.html", {"request": request})
 
-@router.get("/admin/resources", response_class=HTMLResponse, dependencies=[Depends(require_role_admin)])
+@router.get("/admin/resources", response_class=HTMLResponse, dependencies=[Depends(require_admin)])
 def admin_resources(request: Request):
     return templates.TemplateResponse("admin/resources.html", {"request": request})
 
-@router.get("/admin/recipes", response_class=HTMLResponse, dependencies=[Depends(require_role_admin)])
+@router.get("/admin/recipes", response_class=HTMLResponse, dependencies=[Depends(require_admin)])
 def admin_recipes(request: Request):
     return templates.TemplateResponse("admin/recipes.html", {"request": request})
 
-@router.get("/admin/professions", response_class=HTMLResponse, dependencies=[Depends(require_role_admin)])
+@router.get("/admin/professions", response_class=HTMLResponse, dependencies=[Depends(require_admin)])
 def admin_professions(request: Request):
     return templates.TemplateResponse("admin/professions.html", {"request": request})
 
-@router.get("/admin/loot", response_class=HTMLResponse, dependencies=[Depends(require_role_admin)])
+@router.get("/admin/loot", response_class=HTMLResponse, dependencies=[Depends(require_admin)])
 def admin_loot(request: Request):
     return templates.TemplateResponse("admin/loot.html", {"request": request})
 
-@router.get("/admin/stats", response_class=HTMLResponse, dependencies=[Depends(require_role_admin)])
+@router.get("/admin/stats", response_class=HTMLResponse, dependencies=[Depends(require_admin)])
 def admin_stats(request: Request):
     return templates.TemplateResponse("admin/stats.html", {"request": request})
 
-@router.get("/admin/settings", response_class=HTMLResponse, dependencies=[Depends(require_role_admin)])
+@router.get("/admin/settings", response_class=HTMLResponse, dependencies=[Depends(require_admin)])
 def admin_settings(request: Request):
     return templates.TemplateResponse("admin/settings.html", {"request": request})

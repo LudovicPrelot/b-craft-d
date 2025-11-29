@@ -1,6 +1,6 @@
 # app/utils/roles.py
 from fastapi import Depends, HTTPException, status
-from app.utils.deps import get_current_user_required
+from utils.deps import get_current_user_required
 from typing import Any
 
 # user can be dataclass User or dict depending on models

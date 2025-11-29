@@ -24,15 +24,20 @@ DEBUG = os.getenv("DEBUG", "true").lower() == "true"
 # ---------------------------------------------------------------------------
 STORAGE_DIR = BASE_DIR / "storage"
 WEB_INTERFACE_DIR = BASE_DIR / "web_interface"
-USERS_FILE = STORAGE_DIR / "users.json"
-PROFESSIONS_FILE = STORAGE_DIR / "professions.json"
-RECIPES_FILE = STORAGE_DIR / "recipes.json"
-RESOURCES_FILE = STORAGE_DIR / "resources.json"
-REFRESH_TOKENS_FILE = STORAGE_DIR / "refresh_tokens.json"
-FAILED_LOGINS_FILE = STORAGE_DIR / "failed_logins.json"
 
 TEMPLATES_DIR = WEB_INTERFACE_DIR / "templates"
 STATIC_DIR = WEB_INTERFACE_DIR / "static"
+
+FAILED_LOGINS_FILE = STORAGE_DIR / "failed_logins.json"
+LOOT_ENVIRONMENT_FILE = STORAGE_DIR / "loot_environment.json"
+LOOT_TABLES_FILE = STORAGE_DIR / "loot_tables.json"
+PROFESSIONS_FILE = STORAGE_DIR / "professions.json"
+QUESTS_FILE = STORAGE_DIR / "quests.json"
+RECIPES_FILE = STORAGE_DIR / "recipes.json"
+REFRESH_TOKENS_FILE = STORAGE_DIR / "refresh_tokens.json"
+RESOURCES_FILE = STORAGE_DIR / "resources.json"
+SETTINGS_FILE = STORAGE_DIR / "settings.json"
+USERS_FILE = STORAGE_DIR / "users.json"
 
 # Make sure dirs exist in dev
 STORAGE_DIR.mkdir(parents=True, exist_ok=True)

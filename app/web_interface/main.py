@@ -2,6 +2,7 @@ from fastapi import FastAPI, Request, Form
 from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
 import json
+import config
 from pathlib import Path
 
 app = FastAPI()
@@ -21,12 +22,12 @@ async def home(request: Request):
 
 @app.get("/professions")
 async def get_professions(request: Request):
-    data = load("../storage/professions.json")
+    data = load(config.PROFESSIONS_FILE)
     return templates.TemplateResponse("professions.html", {"request": request, "professions": data})
 
 @app.post("/professions/add")
 async def add_profession(id: str = Form(), name: str = Form()):
-    data = load("../storage/professions.json")
+    data = load(config.PROFESSIONS_FILE)
     data[id] = {
         "id": id,
         "name": name,
@@ -34,5 +35,5 @@ async def add_profession(id: str = Form(), name: str = Form()):
         "allowed_recipes": [],
         "subclasses": []
     }
-    save("../storage/professions.json", data)
+    save(config.PROFESSIONS_FILE, data)
     return RedirectResponse("/professions", status_code=303)

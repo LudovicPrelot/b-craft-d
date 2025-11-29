@@ -1,9 +1,9 @@
 # routes/quests_routes.py
 
 from fastapi import APIRouter, Depends, HTTPException
-from utils.deps import require_user
+from utils.roles import require_player
 from utils.feature_flags import require_feature
-from utils.storage import load_json, save_json
+from utils.json import load_json, save_json
 from models.user import User
 from services.xp_service import add_xp
 import config
@@ -17,12 +17,12 @@ router = APIRouter(
 
 @router.get("/")
 def list_quests():
-    return load_json(config.BASE_DIR / "storage" / "quests.json")
+    return load_json(config.QUESTS_FILE)
 
 
 @router.post("/complete/{quest_id}")
-def complete_quest(quest_id: str, current=Depends(require_user)):
-    quests = load_json(config.BASE_DIR / "storage" / "quests.json")
+def complete_quest(quest_id: str, current=Depends(require_player)):
+    quests = load_json(config.QUESTS_FILE)
     users = load_json(config.USERS_FILE)
 
     if quest_id not in quests:

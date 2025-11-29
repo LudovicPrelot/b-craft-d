@@ -1,4 +1,4 @@
-# app/utils/json_loader.py
+# app/utils/json.py
 from pathlib import Path
 import json
 from typing import Any, Optional
@@ -31,7 +31,7 @@ def save_json(path: str | Path, data: Any) -> None:
 
     # write to tmp file
     with tmp.open("w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
+        json.dump(data, f, ensure_ascii=False, indent=4)
 
     # atomic replace
     tmp.replace(p)

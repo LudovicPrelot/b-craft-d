@@ -30,9 +30,9 @@
 
 # CMD ["nginx", "-g", "daemon off;"]
 
-FROM python:3.9
-WORKDIR /app
-COPY ./requirements.txt /requirements.txt
-RUN pip install --no-cache-dir --upgrade -r /requirements.txt
+FROM python:3.11.14-slim-bookworm
 COPY ./app /app
+COPY ./requirements.txt /requirements.txt
+WORKDIR /app
+RUN pip install --no-cache-dir --upgrade -r /requirements.txt
 CMD ["fastapi", "run", "main.py", "--port", "80"]

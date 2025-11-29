@@ -1,21 +1,21 @@
 # routes/devices_routes.py
 
 from fastapi import APIRouter, Depends, HTTPException
-from utils.deps import require_user
-from utils.storage import load_json, save_json
+from utils.roles import require_player
+from utils.json import load_json, save_json
 import config
 
 router = APIRouter(prefix="/api/devices", tags=["Devices"])
 
 @router.get("/")
-def list_devices(user=Depends(require_user)):
+def list_devices(user=Depends(require_player)):
     data = load_json(config.USERS_FILE)
     uid = user["id"]
     devices = data[uid].get("devices", [])
     return {"devices": devices}
 
 @router.post("/add")
-def add_device(device_id: str, user=Depends(require_user)):
+def add_device(device_id: str, user=Depends(require_player)):
     data = load_json(config.USERS_FILE)
     uid = user["id"]
 

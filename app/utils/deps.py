@@ -1,10 +1,10 @@
 # app/utils/deps.py
 from typing import Optional
 from fastapi import Request, Depends, HTTPException, status
-from app.utils.auth import decode_access_token
-from app.utils.json_loader import load_json
-from app.config import USERS_FILE
-from app.models.user import User  # on s'attend à ce que models.user définisse la classe User dataclass
+from utils.auth import decode_access_token
+from utils.json import load_json
+from config import USERS_FILE
+from models.user import User  # on s'attend à ce que models.user définisse la classe User dataclass
 
 
 def _extract_token_from_request(request: Request) -> Optional[str]:

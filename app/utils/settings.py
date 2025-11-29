@@ -1,8 +1,8 @@
-from utils.storage import load_json, save_json
+from utils.json import load_json, save_json
 import config
 
 def get_settings():
-    return load_json(config.BASE_DIR / "storage" / "settings.json")
+    return load_json(config.SETTINGS_FILE)
 
 def update_settings(new):
-    save_json(config.BASE_DIR / "storage" / "settings.json", new)
+    save_json(config.SETTINGS_FILE, new)

@@ -1,6 +1,6 @@
 import pytest
 from fastapi.testclient import TestClient
-from utils.storage import save_json
+from utils.json import save_json
 import config
 from main import app
 

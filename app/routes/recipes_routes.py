@@ -1,20 +1,20 @@
 # routes/recipes_routes.py
 
 from fastapi import APIRouter, Depends, HTTPException
-from utils.storage import load_json, save_json
-from utils.deps import require_user
-from utils.roles import require_role_moderator
+from utils.json import load_json, save_json
+from utils.roles import require_player
+from utils.roles import require_moderator
 import config
 
 router = APIRouter(prefix="/recipes", tags=["Recipes"])
 
 
 @router.get("/")
-def list_recipes(current=Depends(require_user)):
+def list_recipes(current=Depends(require_player)):
     return list(load_json(config.RECIPES_FILE).values())
 
 
-@router.post("/", dependencies=[Depends(require_role_moderator)])
+@router.post("/", dependencies=[Depends(require_moderator)])
 def create_recipe(payload):
     data = load_json(config.RECIPES_FILE)
     if payload["id"] in data:
@@ -24,7 +24,7 @@ def create_recipe(payload):
     return payload
 
 
-@router.delete("/{rid}", dependencies=[Depends(require_role_moderator)])
+@router.delete("/{rid}", dependencies=[Depends(require_moderator)])
 def delete_recipe(rid: str):
     data = load_json(config.RECIPES_FILE)
     if rid not in data:

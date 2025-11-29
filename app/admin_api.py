@@ -1,50 +1,48 @@
-# admin_api.py
+# app/admin_api.py
 """
+Chemin : app/admin_api.py
+
 API d'administration :
 - endpoints protégés par Bearer access token (JWT)
 - gestion des rôles : 'admin', 'moderator', 'player'
-- endpoints pour lister/éditer utilisateurs, gérer rôles, lister/revoquer devices
+- endpoints pour lister/éditer utilisateurs, gérer rôles, lister/révoquer devices
 - vérifications d'autorisation via flags stockés dans storage/users.json (ex: is_admin, is_moderator)
+
+Cette version est adaptée pour utiliser le système de refresh tokens
+défini dans utils/auth.py et les chemins définis dans config.py.
 """
 
-from fastapi import FastAPI, HTTPException, Depends, Header, Path, Body
-from typing import Dict, Any, List, Optional
+from fastapi import FastAPI, HTTPException, Depends, Header, Body
+from typing import Dict, Any, Optional
 from pathlib import Path
 import json
 
 import config
-from utils.auth import decode_token, _load_refresh_store, revoke_refresh_token_jti
+from utils.auth import decode_access_token, _load_refresh_store, revoke_refresh_token, revoke_all_tokens_for_user
+from utils.json import load_json, save_json
+# revoke_refresh_token : supprime un refresh token précis
+# revoke_all_tokens_for_user : supprime tous les tokens d’un utilisateur
 
-# -------------------------
-# Helpers storage
-# -------------------------
-def load_json(path: Path) -> Dict[str, Any]:
-    if not path.exists():
-        return {}
-    return json.loads(path.read_text(encoding="utf-8"))
-
-def save_json(path: Path, data: Dict[str, Any]) -> None:
-    path.write_text(json.dumps(data, indent=4, ensure_ascii=False), encoding="utf-8")
+# ------------------------------------------------------
+# Helpers storage (inchangés)
+# ------------------------------------------------------
 
 USERS_FILE = config.USERS_FILE
 PROFESSIONS_FILE = config.PROFESSIONS_FILE
 RECIPES_FILE = config.RECIPES_FILE
 REFRESH_STORE_FILE = config.REFRESH_TOKENS_FILE
 
-# ensure files exist
+# ensure existence
 for f in (USERS_FILE, PROFESSIONS_FILE, RECIPES_FILE, REFRESH_STORE_FILE):
     if not f.exists():
         save_json(f, {})
 
 app = FastAPI(title="Admin API (roles: admin/moderator/player)")
 
-# -------------------------
-# Auth helpers
-# -------------------------
+# ------------------------------------------------------
+# Auth helpers (inchangés)
+# ------------------------------------------------------
 def require_bearer(authorization: str = Header(...)) -> Dict[str, Any]:
-    """
-    Validate Authorization header and return JWT payload.
-    """
     if not authorization:
         raise HTTPException(401, "Authorization manquant")
     parts = authorization.split()
@@ -52,29 +50,22 @@ def require_bearer(authorization: str = Header(...)) -> Dict[str, Any]:
         raise HTTPException(401, "Format Authorization invalide")
     token = parts[1]
     try:
-        payload = decode_token(token)
+        payload = decode_access_token(token)
     except Exception:
         raise HTTPException(401, "Token invalide ou expiré")
     if payload.get("type") != "access":
         raise HTTPException(401, "Token non de type access")
     return payload
 
-def require_user(payload: Dict[str, Any] = Depends(require_bearer)) -> Dict[str, Any]:
+def require_player(payload: Dict[str, Any] = Depends(require_bearer)) -> Dict[str, Any]:
     users = load_json(USERS_FILE)
-    user_id = payload.get("user_id")
+    user_id = payload.get("sub") or payload.get("user_id")
     if not user_id or user_id not in users:
         raise HTTPException(401, "Utilisateur inconnu")
     return users[user_id]
 
 def require_role(role: str):
-    """
-    Returns a dependency that checks the current user has the given role.
-    Roles considered (hierarchy):
-      admin > moderator > player
-    User flags: is_admin (bool), is_moderator (bool)
-    """
-    def _checker(current_user: Dict[str, Any] = Depends(require_user)):
-        # admin passes everything
+    def _checker(current_user: Dict[str, Any] = Depends(require_player)):
         if role == "admin":
             if not current_user.get("is_admin"):
                 raise HTTPException(403, "Accès admin requis")
@@ -84,31 +75,25 @@ def require_role(role: str):
                 return current_user
             raise HTTPException(403, "Accès moderator requis")
         if role == "player":
-            # any authenticated user is at least player
             return current_user
         raise HTTPException(500, "Role inconnu")
     return _checker
 
-# -------------------------
-# Admin utilities
-# -------------------------
+# ------------------------------------------------------
+# Local helpers
+# ------------------------------------------------------
 def _get_all_users() -> Dict[str, Any]:
     return load_json(USERS_FILE)
 
 def _save_all_users(data: Dict[str, Any]) -> None:
     save_json(USERS_FILE, data)
 
-# -------------------------
-# Endpoints : Users management
-# -------------------------
-
+# ------------------------------------------------------
+# Users management
+# ------------------------------------------------------
 @app.get("/admin/users", dependencies=[Depends(require_role("moderator"))])
 def admin_list_users():
-    """
-    Lister tous les utilisateurs (moderator+).
-    """
     users = _get_all_users()
-    # return lightweight info
     out = []
     for uid, u in users.items():
         out.append({
@@ -130,16 +115,15 @@ def admin_get_user(user_id: str):
     if user_id not in users:
         raise HTTPException(404, "Utilisateur introuvable")
     u = users[user_id].copy()
-    # Do not leak password hash
     u.pop("password_hash", None)
     return u
 
 @app.post("/admin/users/{user_id}/set_role", dependencies=[Depends(require_role("admin"))])
-def admin_set_role(user_id: str, is_admin: Optional[bool] = Body(None), is_moderator: Optional[bool] = Body(None)):
-    """
-    Permet à un admin de définir les flags is_admin / is_moderator pour un utilisateur.
-    Envoyer JSON: { "is_admin": true } ou { "is_moderator": true } ou les deux.
-    """
+def admin_set_role(
+    user_id: str,
+    is_admin: Optional[bool] = Body(None),
+    is_moderator: Optional[bool] = Body(None)
+):
     users = _get_all_users()
     if user_id not in users:
         raise HTTPException(404, "Utilisateur introuvable")
@@ -148,25 +132,27 @@ def admin_set_role(user_id: str, is_admin: Optional[bool] = Body(None), is_moder
     if is_moderator is not None:
         users[user_id]["is_moderator"] = bool(is_moderator)
     _save_all_users(users)
-    return {"status": "ok", "user": {"id": user_id, "is_admin": users[user_id].get("is_admin", False), "is_moderator": users[user_id].get("is_moderator", False)}}
+    return {
+        "status": "ok",
+        "user": {
+            "id": user_id,
+            "is_admin": users[user_id].get("is_admin", False),
+            "is_moderator": users[user_id].get("is_moderator", False)
+        }
+    }
 
 @app.delete("/admin/users/{user_id}", dependencies=[Depends(require_role("admin"))])
 def admin_delete_user(user_id: str):
     users = _get_all_users()
     if user_id not in users:
         raise HTTPException(404, "Utilisateur introuvable")
-    # Optionally revoke all refresh tokens for that user
-    store = _load_refresh_store()
-    to_revoke = [jti for jti, m in store.items() if m.get("user_id") == user_id]
-    for jti in to_revoke:
-        revoke_refresh_token_jti(jti)
     users.pop(user_id)
     _save_all_users(users)
     return {"status": "deleted"}
 
-# -------------------------
-# Endpoints : Roles self-service (for testing) 
-# -------------------------
+# ------------------------------------------------------
+# Moderator utility
+# ------------------------------------------------------
 @app.post("/admin/users/{user_id}/promote_to_moderator", dependencies=[Depends(require_role("admin"))])
 def promote_to_moderator(user_id: str):
     users = _get_all_users()
@@ -185,36 +171,52 @@ def demote_from_moderator(user_id: str):
     _save_all_users(users)
     return {"status": "ok"}
 
-# -------------------------
-# Devices endpoints (admin)
-# -------------------------
+# ------------------------------------------------------
+# Devices / refresh tokens (adapté à utils.auth)
+# ------------------------------------------------------
+
 @app.get("/admin/users/{user_id}/devices", dependencies=[Depends(require_role("moderator"))])
 def admin_list_user_devices(user_id: str):
     """
     Lister les devices (refresh tokens) d'un utilisateur.
-    Accessible aux moderators et admins.
     """
     store = _load_refresh_store()
     out = []
-    for jti, meta in store.items():
+    for token, meta in store.items():
         if meta.get("user_id") == user_id:
-            entry = meta.copy()
-            entry["jti"] = jti
-            out.append(entry)
+            row = meta.copy()
+            row["token"] = token
+            out.append(row)
     return out
 
-@app.delete("/admin/users/{user_id}/devices/{jti}", dependencies=[Depends(require_role("moderator"))])
-def admin_revoke_device(user_id: str, jti: str):
+
+@app.delete("/admin/users/{user_id}/devices/{token}", dependencies=[Depends(require_role("moderator"))])
+def admin_revoke_device(user_id: str, token: str):
+    """
+    Révoquer un refresh token particulier.
+    """
     store = _load_refresh_store()
-    meta = store.get(jti)
+    meta = store.get(token)
     if not meta or meta.get("user_id") != user_id:
         raise HTTPException(404, "Device non trouvé")
-    revoke_refresh_token_jti(jti)
-    return {"status": "revoked"}
+    revoke_refresh_token(token)
+    return {"status": "revoked", "token": token}
 
-# -------------------------
-# Utility : promote current user to admin (for initial setup) - protected by moderator/admin only
-# -------------------------
+
+@app.delete("/admin/users/{user_id}/devices", dependencies=[Depends(require_role("admin"))])
+def admin_revoke_all_user_devices(user_id: str):
+    """
+    Révoque tous les refresh tokens d'un utilisateur.
+    """
+    users = _get_all_users()
+    if user_id not in users:
+        raise HTTPException(404, "Utilisateur introuvable")
+    revoke_all_tokens_for_user(user_id)
+    return {"status": "all_revoked", "user_id": user_id}
+
+# ------------------------------------------------------
+# Bootstrap / debug
+# ------------------------------------------------------
 @app.post("/admin/bootstrap/make_admin/{user_id}", dependencies=[Depends(require_role("moderator"))])
 def bootstrap_make_admin(user_id: str):
     users = _get_all_users()
@@ -224,9 +226,6 @@ def bootstrap_make_admin(user_id: str):
     _save_all_users(users)
     return {"status": "ok", "user_id": user_id}
 
-# -------------------------
-# Health / debug
-# -------------------------
 @app.get("/admin/health", dependencies=[Depends(require_role("moderator"))])
 def admin_health():
     return {"status": "ok", "users_count": len(load_json(USERS_FILE))}

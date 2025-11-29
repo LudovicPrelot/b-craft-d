@@ -1,8 +1,8 @@
 # routes/loot_routes.py
 
 from fastapi import APIRouter, Depends, Query, HTTPException
-from utils.deps import require_user
-from utils.storage import load_json, save_json
+from utils.roles import require_player
+from utils.json import load_json, save_json
 from utils.feature_flags import require_feature
 from models.user import User
 from services.xp_service import add_xp
@@ -33,7 +33,7 @@ def weighted_choice(entries):
 
 
 def load_environment_modifiers():
-    path = Path(config.BASE_DIR) / "storage" / "loot_environment.json"
+    path = config.LOOT_ENVIRONMENT_FILE
     if not path.exists():
         return {"season_modifiers": {}, "weather_modifiers": {}, "event_modifiers": {}}
     return json.loads(path.read_text(encoding="utf-8"))
@@ -59,7 +59,7 @@ STAT_MULTIPLIERS = {
 
 @router.post("/collect")
 def collect(
-    current=Depends(require_user),
+    current=Depends(require_player),
     attempts: int = Query(1, ge=1, le=10),
     season: str = Query("summer"),
     weather: str = Query("sunny"),
@@ -77,7 +77,7 @@ def collect(
 
     user = User.from_dict(current)
     users = load_json(config.USERS_FILE)
-    loot_tables = load_json(config.BASE_DIR / "storage" / "loot_tables.json")
+    loot_tables = load_json(config.LOOT_TABLES_FILE)
     env_mod = load_environment_modifiers()
 
     # choose available loot tables
