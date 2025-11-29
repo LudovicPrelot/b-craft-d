@@ -1,9 +1,10 @@
-# routes/loot_routes.py
+# app/routes/loot_routes.py
 
 from fastapi import APIRouter, Depends, Query, HTTPException
 from utils.roles import require_player
 from utils.json import load_json, save_json
 from utils.feature_flags import require_feature
+from utils.logger import get_logger
 from models.user import User
 from services.xp_service import add_xp
 import config, random
@@ -11,10 +12,12 @@ from collections import defaultdict
 from pathlib import Path
 import json
 
+logger = get_logger(__name__)
+
 router = APIRouter(
     prefix="/loot",
     tags=["Loot"],
-    dependencies=[Depends(require_feature("enable_loot"))]  # <-- activation contrôlée
+    dependencies=[Depends(require_feature("enable_loot"))]
 )
 
 # -------------------------------------------------------
@@ -76,79 +79,96 @@ def collect(
     """
 
     user = User.from_dict(current)
-    users = load_json(config.USERS_FILE)
-    loot_tables = load_json(config.LOOT_TABLES_FILE)
-    env_mod = load_environment_modifiers()
+    logger.info(f"🎲 Collecte de loot par user_id={user.id} (attempts={attempts}, season={season}, weather={weather})")
+    
+    try:
+        users = load_json(config.USERS_FILE)
+        loot_tables = load_json(config.LOOT_TABLES_FILE)
+        env_mod = load_environment_modifiers()
 
-    # choose available loot tables
-    tables = []
+        # choose available loot tables
+        tables = []
 
-    if user.biome and user.biome in loot_tables:
-        tables.append(loot_tables[user.biome])
+        if user.biome and user.biome in loot_tables:
+            tables.append(loot_tables[user.biome])
+            logger.debug(f"   → Table de loot pour biome '{user.biome}' ajoutée")
 
-    # job-based fallback
-    professions = load_json(config.PROFESSIONS_FILE)
-    prof = professions.get(user.profession, {})
-    for b in prof.get("biomes", []):
-        if b in loot_tables:
-            tables.append(loot_tables[b])
+        # job-based fallback
+        professions = load_json(config.PROFESSIONS_FILE)
+        prof = professions.get(user.profession, {})
+        for b in prof.get("biomes", []):
+            if b in loot_tables:
+                tables.append(loot_tables[b])
+                logger.debug(f"   → Table de loot profession '{b}' ajoutée")
 
-    # default table
-    if "default" in loot_tables:
-        tables.append(loot_tables["default"])
+        # default table
+        if "default" in loot_tables:
+            tables.append(loot_tables["default"])
+            logger.debug(f"   → Table de loot par défaut ajoutée")
 
-    if not tables:
-        raise HTTPException(400, "No loot tables available.")
+        if not tables:
+            logger.warning(f"⚠️  Aucune table de loot disponible")
+            raise HTTPException(400, "No loot tables available.")
 
-    gained = defaultdict(int)
+        gained = defaultdict(int)
 
-    # modifiers
-    season_mult = env_mod["season_modifiers"].get(season, 1.0)
-    weather_mult = env_mod["weather_modifiers"].get(weather, 1.0)
-    event_mult = 1.0 if event is None else env_mod["event_modifiers"].get(event, 1.0)
+        # modifiers
+        season_mult = env_mod["season_modifiers"].get(season, 1.0)
+        weather_mult = env_mod["weather_modifiers"].get(weather, 1.0)
+        event_mult = 1.0 if event is None else env_mod["event_modifiers"].get(event, 1.0)
+        
+        logger.debug(f"   → Multiplicateurs: season={season_mult}, weather={weather_mult}, event={event_mult}")
 
-    for _ in range(attempts):
-        chosen = random.choice(tables)
-        weights = []
+        for _ in range(attempts):
+            chosen = random.choice(tables)
+            weights = []
 
-        for e in chosen["table"]:
-            rarity = e.get("rarity", "common")
-            base = float(e.get("weight", 1))
+            for e in chosen["table"]:
+                rarity = e.get("rarity", "common")
+                base = float(e.get("weight", 1))
 
-            rarity_mult = RARITY_MULTIPLIERS.get(rarity, 1.0)
+                rarity_mult = RARITY_MULTIPLIERS.get(rarity, 1.0)
 
-            stat_mult = (
-                user.stats.get("strength", 1) * STAT_MULTIPLIERS["strength"]
-                + user.stats.get("agility", 1) * STAT_MULTIPLIERS["agility"]
-                + user.stats.get("endurance", 1) * STAT_MULTIPLIERS["endurance"]
-            )
+                stat_mult = (
+                    user.stats.get("strength", 1) * STAT_MULTIPLIERS["strength"]
+                    + user.stats.get("agility", 1) * STAT_MULTIPLIERS["agility"]
+                    + user.stats.get("endurance", 1) * STAT_MULTIPLIERS["endurance"]
+                )
 
-            final_weight = base * rarity_mult
-            final_weight *= (1.0 + stat_mult)
-            final_weight *= season_mult
-            final_weight *= weather_mult
-            final_weight *= event_mult
+                final_weight = base * rarity_mult
+                final_weight *= (1.0 + stat_mult)
+                final_weight *= season_mult
+                final_weight *= weather_mult
+                final_weight *= event_mult
 
-            weights.append((e, max(0.01, final_weight)))
+                weights.append((e, max(0.01, final_weight)))
 
-        entry = weighted_choice(weights)
-        qty = random.randint(entry.get("min", 1), entry.get("max", 1))
-        gained[entry["item"]] += qty
+            entry = weighted_choice(weights)
+            qty = random.randint(entry.get("min", 1), entry.get("max", 1))
+            gained[entry["item"]] += qty
 
-    # update user inventory
-    for item, qty in gained.items():
-        user.inventory[item] = user.inventory.get(item, 0) + qty
+        # update user inventory
+        for item, qty in gained.items():
+            user.inventory[item] = user.inventory.get(item, 0) + qty
 
-    # save
-    users[user.id] = user.to_dict()
-    save_json(config.USERS_FILE, users)
+        # save
+        users[user.id] = user.to_dict()
+        save_json(config.USERS_FILE, users)
+        
+        logger.info(f"✅ Loot collecté: {dict(gained)}")
 
-    return {
-        "gained": dict(gained),
-        "inventory": user.inventory,
-        "multipliers": {
-            "season": season_mult,
-            "weather": weather_mult,
-            "event": event_mult
+        return {
+            "gained": dict(gained),
+            "inventory": user.inventory,
+            "multipliers": {
+                "season": season_mult,
+                "weather": weather_mult,
+                "event": event_mult
+            }
         }
-    }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"❌ Erreur lors de la collecte de loot", exc_info=True)
+        raise HTTPException(500, "Failed to collect loot")

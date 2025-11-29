@@ -1,13 +1,26 @@
 import os
+from dotenv import load_dotenv
+
+load_dotenv()  # reads variables from a .env file and sets them in os.environ
+
+import secrets
 from pathlib import Path
 
 # Racine du projet
 BASE_DIR = Path(__file__).resolve().parent
 
 # ---------------------------------------------------------------------------
-# ENVIRONMENT VARIABLES (lecture simple) — valeurs par défaut en dev
+# ENVIRONMENT VARIABLES (lecture simple) – valeurs par défaut en dev
 # ---------------------------------------------------------------------------
-JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", "CHANGE_THIS_SECRET_IN_PRODUCTION")
+
+# JWT Secret avec génération automatique sécurisée
+JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY")
+if not JWT_SECRET_KEY:
+    JWT_SECRET_KEY = secrets.token_urlsafe(32)
+    print("⚠️  WARNING: Using auto-generated JWT secret.")
+    print("   Set JWT_SECRET_KEY environment variable in production!")
+    print(f"   Generated secret: {JWT_SECRET_KEY}")
+
 JWT_ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
 
 ACCESS_TOKEN_EXPIRE_MIN = int(os.getenv("ACCESS_TOKEN_EXPIRE_MIN", 15))
@@ -24,6 +37,7 @@ DEBUG = os.getenv("DEBUG", "true").lower() == "true"
 # ---------------------------------------------------------------------------
 STORAGE_DIR = BASE_DIR / "storage"
 WEB_INTERFACE_DIR = BASE_DIR / "web_interface"
+LOGS_DIR = BASE_DIR / "logs"
 
 TEMPLATES_DIR = WEB_INTERFACE_DIR / "templates"
 STATIC_DIR = WEB_INTERFACE_DIR / "static"
@@ -44,3 +58,4 @@ STORAGE_DIR.mkdir(parents=True, exist_ok=True)
 WEB_INTERFACE_DIR.mkdir(parents=True, exist_ok=True)
 TEMPLATES_DIR.mkdir(parents=True, exist_ok=True)
 STATIC_DIR.mkdir(parents=True, exist_ok=True)
+LOGS_DIR.mkdir(parents=True, exist_ok=True)

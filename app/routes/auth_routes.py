@@ -1,7 +1,5 @@
 # app/routes/auth_routes.py
 """
-Chemin : app/routes/auth_routes.py
-
 Routes d'authentification.
 Compatible avec :
  - utils/auth.py (version sécurisée avec refresh tokens hashés)
@@ -26,6 +24,7 @@ from typing import Dict, Any, Optional
 from uuid import uuid4
 
 from config import USERS_FILE, REFRESH_TOKENS_FILE, REFRESH_TOKEN_EXPIRE_DAYS
+from utils.logger import get_logger
 
 from utils.json import load_json, save_json
 from utils.auth import (
@@ -43,6 +42,9 @@ from utils.auth import (
 from utils.deps import get_current_user_required
 from utils.roles import require_admin
 
+# Initialise le logger pour ce module
+logger = get_logger(__name__)
+
 router = APIRouter(prefix="/api/auth", tags=["Auth"])
 
 
@@ -50,12 +52,16 @@ router = APIRouter(prefix="/api/auth", tags=["Auth"])
 # Helpers
 # ---------------------------------------------------------------------------
 def _find_user_by_login(login: str) -> Optional[Dict[str, Any]]:
+    """Recherche un utilisateur par son login."""
+    logger.debug(f"Recherche de l'utilisateur avec login: {login}")
     users = load_json(USERS_FILE) or {}
     for uid, u in users.items():
         if u.get("login") == login:
             user = dict(u)
             user["id"] = uid
+            logger.debug(f"   → Utilisateur trouvé: {uid}")
             return user
+    logger.debug(f"   → Aucun utilisateur trouvé pour le login: {login}")
     return None
 
 
@@ -74,22 +80,30 @@ def login(payload: Dict[str, Any] = Body(...), response: Response = None):
     device_id = payload.get("device_id") or str(uuid4())
     device_name = payload.get("device_name") or ""  # optionnel
 
+    logger.info(f"🔐 Tentative de connexion pour: {login_val}")
+
     if not login_val or not password:
+        logger.warning("⚠️  Connexion refusée: login ou mot de passe manquant")
         raise HTTPException(status_code=400, detail="Missing login or password")
 
     user = _find_user_by_login(login_val)
     if not user:
+        logger.warning(f"⚠️  Échec de connexion pour {login_val}: utilisateur introuvable")
         raise HTTPException(status_code=401, detail="Invalid credentials")
 
+    logger.debug(f"   → Vérification du mot de passe pour {login_val}")
     if not verify_password(password, user.get("password_hash", "")):
+        logger.warning(f"⚠️  Échec de connexion pour {login_val}: mot de passe incorrect")
         raise HTTPException(status_code=401, detail="Invalid credentials")
 
     # Create tokens
     uid = user["id"]
+    logger.debug(f"   → Génération des tokens pour user_id={uid}")
     access = create_access_token({"sub": uid})
     refresh = create_refresh_token({"sub": uid})
 
     # Store (HMAC-hash only)
+    logger.debug(f"   → Stockage du refresh token pour device_id={device_id}")
     store_refresh_token(refresh, uid, device_id, device_name)
 
     # Prepare safe user
@@ -105,6 +119,8 @@ def login(payload: Dict[str, Any] = Body(...), response: Response = None):
         samesite="lax",
         max_age=REFRESH_TOKEN_EXPIRE_DAYS * 24 * 3600,
     )
+
+    logger.info(f"✅ Connexion réussie pour {login_val} (user_id={uid}, device={device_id})")
 
     return {
         "access_token": access,
@@ -128,44 +144,49 @@ def refresh(body: Dict[str, Any] = Body(...), response: Response = None):
       - save new refresh for same device
       - set cookie again
     """
+    logger.debug("🔄 Tentative de rafraîchissement de token")
+    
     old_refresh = body.get("refresh_token")
     if not old_refresh:
+        logger.warning("⚠️  Rafraîchissement refusé: refresh_token manquant")
         raise HTTPException(status_code=400, detail="Missing refresh_token")
 
+    logger.debug("   → Vérification du refresh token")
     old_payload = decode_refresh_token(old_refresh)
     if not old_payload:
+        logger.warning("⚠️  Rafraîchissement refusé: refresh token invalide")
         raise HTTPException(status_code=401, detail="Invalid refresh token")
 
     uid = old_payload.get("sub")
     if not uid:
+        logger.error("❌ Refresh token malformé: sub manquant")
         raise HTTPException(status_code=400, detail="Malformed token")
 
-    store = load_json(REFRESH_TOKENS_FILE) or {}
-    # store uses hashed keys, so check through HMAC hash
-    # → use rotate helper instead of checking store directly
-
+    logger.debug(f"   → Génération de nouveaux tokens pour user_id={uid}")
+    
     # Create new tokens
     new_access = create_access_token({"sub": uid})
     new_refresh = create_refresh_token({"sub": uid})
 
     # We need device_id : get it from store via raw hashed lookup
-    # Instead of calling internal hash, we parse devices:
+    logger.debug("   → Recherche du device_id associé")
     devices = get_active_devices(uid)
-    # Try to find the device by matching token hash
     device_id = None
+    
     for d in devices:
-        # d["token_hash"] is hashed token but we don't have hashed(old_refresh) directly here
-        # → API changed : we must hash old_refresh for matching
         from utils.auth import _token_hash
         if d["token_hash"] == _token_hash(old_refresh):
             device_id = d["device_id"]
+            logger.debug(f"   → Device trouvé: {device_id}")
             break
 
     if not device_id:
         # fallback (rare): assign a new device_id
         device_id = str(uuid4())
+        logger.warning(f"⚠️  Device non trouvé, génération d'un nouveau device_id: {device_id}")
 
     # ROTATE: atomic revoke + store
+    logger.debug(f"   → Rotation du token pour device={device_id}")
     rotate_refresh_token(old_refresh, new_refresh, uid, device_id)
 
     # Set updated cookie
@@ -177,6 +198,8 @@ def refresh(body: Dict[str, Any] = Body(...), response: Response = None):
         samesite="lax",
         max_age=REFRESH_TOKEN_EXPIRE_DAYS * 24 * 3600,
     )
+
+    logger.info(f"✅ Token rafraîchi avec succès pour user_id={uid}, device={device_id}")
 
     return {
         "access_token": new_access,
@@ -194,6 +217,8 @@ def logout(request: Request, body: Dict[str, Any] = Body(None)):
     Revoke only the current device's refresh token.
     Accepts token in body or cookie.
     """
+    logger.info("👋 Tentative de déconnexion")
+    
     refresh_token = (
         (body.get("refresh_token") if body else None)
         or request.cookies.get("refresh_token")
@@ -201,13 +226,15 @@ def logout(request: Request, body: Dict[str, Any] = Body(None)):
 
     if refresh_token:
         try:
+            logger.debug("   → Révocation du refresh token")
             revoke_refresh_token(refresh_token)
-        except Exception:
-            pass
+            logger.info("✅ Déconnexion réussie")
+        except Exception as e:
+            logger.warning(f"⚠️  Erreur lors de la révocation du token: {str(e)}")
+    else:
+        logger.debug("   → Aucun refresh token à révoquer")
 
-    # Cookie cleanup
-    resp = {"message": "Logged out"}
-    return resp
+    return {"message": "Logged out"}
 
 
 # ---------------------------------------------------------------------------
@@ -215,10 +242,22 @@ def logout(request: Request, body: Dict[str, Any] = Body(None)):
 # ---------------------------------------------------------------------------
 @router.post("/logout_all")
 def logout_all(user = Depends(get_current_user_required)):
+    """Révoque toutes les sessions d'un utilisateur."""
     uid = user.get("id") if isinstance(user, dict) else getattr(user, "id", None)
+    
     if not uid:
+        logger.error("❌ logout_all: user_id invalide")
         raise HTTPException(status_code=400, detail="Invalid user")
-    revoke_all_tokens_for_user(uid)
+    
+    logger.info(f"🔒 Révocation de toutes les sessions pour user_id={uid}")
+    
+    try:
+        revoke_all_tokens_for_user(uid)
+        logger.info(f"✅ Toutes les sessions révoquées pour user_id={uid}")
+    except Exception as e:
+        logger.error(f"❌ Erreur lors de la révocation des sessions: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to revoke sessions")
+    
     return {"message": "All sessions revoked"}
 
 
@@ -227,11 +266,22 @@ def logout_all(user = Depends(get_current_user_required)):
 # ---------------------------------------------------------------------------
 @router.get("/me/devices")
 def list_devices(user = Depends(get_current_user_required)):
+    """Liste tous les appareils connectés de l'utilisateur."""
     uid = user.get("id") if isinstance(user, dict) else getattr(user, "id", None)
+    
     if not uid:
+        logger.error("❌ list_devices: user_id invalide")
         raise HTTPException(status_code=400, detail="Invalid user")
 
-    return {"devices": get_active_devices(uid)}
+    logger.debug(f"📱 Liste des devices pour user_id={uid}")
+    
+    try:
+        devices = get_active_devices(uid)
+        logger.debug(f"   → {len(devices)} device(s) actif(s) trouvé(s)")
+        return {"devices": devices}
+    except Exception as e:
+        logger.error(f"❌ Erreur lors de la récupération des devices: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to retrieve devices")
 
 
 # ---------------------------------------------------------------------------
@@ -239,22 +289,36 @@ def list_devices(user = Depends(get_current_user_required)):
 # ---------------------------------------------------------------------------
 @router.post("/me/devices/{device_id}/revoke")
 def revoke_device(device_id: str, user = Depends(get_current_user_required)):
+    """Révoque un appareil spécifique."""
     uid = user.get("id") if isinstance(user, dict) else getattr(user, "id", None)
+    
     if not uid:
+        logger.error("❌ revoke_device: user_id invalide")
         raise HTTPException(status_code=400, detail="Invalid user")
 
-    # Remove tokens matching the device (hashed store)
-    store = load_json(REFRESH_TOKENS_FILE) or {}
-    to_delete = []
+    logger.info(f"🔒 Révocation du device {device_id} pour user_id={uid}")
 
-    # Need to check hashed entries
-    for token_hash, meta in store.items():
-        if meta.get("user_id") == uid and meta.get("device_id") == device_id:
-            to_delete.append(token_hash)
+    try:
+        # Remove tokens matching the device (hashed store)
+        store = load_json(REFRESH_TOKENS_FILE) or {}
+        to_delete = []
 
-    for th in to_delete:
-        store.pop(th, None)
+        # Need to check hashed entries
+        for token_hash, meta in store.items():
+            if meta.get("user_id") == uid and meta.get("device_id") == device_id:
+                to_delete.append(token_hash)
 
-    save_json(REFRESH_TOKENS_FILE, store)
+        logger.debug(f"   → {len(to_delete)} token(s) à supprimer")
+        
+        for th in to_delete:
+            store.pop(th, None)
 
-    return {"revoked": len(to_delete)}
+        save_json(REFRESH_TOKENS_FILE, store)
+
+        logger.info(f"✅ Device {device_id} révoqué avec succès ({len(to_delete)} token(s) supprimé(s))")
+
+        return {"revoked": len(to_delete)}
+        
+    except Exception as e:
+        logger.error(f"❌ Erreur lors de la révocation du device: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to revoke device")
