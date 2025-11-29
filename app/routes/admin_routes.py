@@ -1,8 +1,8 @@
 # routes/admin_routes.py
 
 from fastapi import APIRouter, HTTPException, Depends
-from utils.roles import require_role_admin
-from utils.storage import load_json, save_json
+from utils.roles import require_admin
+from utils.json import load_json, save_json
 from utils.auth import hash_password
 from models.user import User
 import uuid, config
@@ -10,7 +10,7 @@ from services.xp_service import add_xp
 from pathlib import Path
 import json
 
-router = APIRouter(tags=["Admin"], dependencies=[Depends(require_role_admin)])
+router = APIRouter(tags=["Admin"], dependencies=[Depends(require_admin)])
 
 # helper
 def load_users():
@@ -78,18 +78,15 @@ def admin_grant_xp(uid: str, payload: dict):
     save_users(users)
     return {"status": "ok", "xp": user.xp, "level": user.level}
 
-# Loot table management
-LOOT_FILE = Path(config.BASE_DIR) / "storage" / "loot_tables.json"
-
 def _load_loot():
     try:
-        return json.loads(LOOT_FILE.read_text(encoding="utf-8"))
+        return json.loads(config.LOOT_TABLES_FILE.read_text(encoding="utf-8"))
     except Exception:
         return {}
 
 def _save_loot(d):
-    LOOT_FILE.parent.mkdir(parents=True, exist_ok=True)
-    LOOT_FILE.write_text(json.dumps(d, indent=4, ensure_ascii=False), encoding="utf-8")
+    config.LOOT_TABLES_FILE.parent.mkdir(parents=True, exist_ok=True)
+    config.LOOT_TABLES_FILE.write_text(json.dumps(d, indent=4, ensure_ascii=False), encoding="utf-8")
 
 @router.get("/loot/tables")
 def list_loot_tables():

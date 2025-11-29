@@ -1,20 +1,20 @@
 # routes/professions_routes.py
 
 from fastapi import APIRouter, Depends, HTTPException
-from utils.deps import require_user
-from utils.roles import require_role_moderator
-from utils.storage import load_json, save_json
+from utils.roles import require_player
+from utils.roles import require_moderator
+from utils.json import load_json, save_json
 import config
 
 router = APIRouter(prefix="/professions", tags=["Professions"])
 
 
 @router.get("/")
-def list_professions(current=Depends(require_user)):
+def list_professions(current=Depends(require_player)):
     return list(load_json(config.PROFESSIONS_FILE).values())
 
 
-@router.post("/", dependencies=[Depends(require_role_moderator)])
+@router.post("/", dependencies=[Depends(require_moderator)])
 def create_prof(payload: dict):
     data = load_json(config.PROFESSIONS_FILE)
     if payload["id"] in data:
@@ -24,7 +24,7 @@ def create_prof(payload: dict):
     return payload
 
 
-@router.delete("/{pid}", dependencies=[Depends(require_role_moderator)])
+@router.delete("/{pid}", dependencies=[Depends(require_moderator)])
 def delete_prof(pid: str):
     data = load_json(config.PROFESSIONS_FILE)
     if pid not in data:

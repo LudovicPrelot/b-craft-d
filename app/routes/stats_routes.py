@@ -1,11 +1,11 @@
 # routes/stats_routes.py
 
 from fastapi import APIRouter, Depends
-from utils.deps import require_user
+from utils.roles import require_player
 from utils.feature_flags import require_feature
 from services.xp_service import add_xp, xp_for_level
 from models.user import User
-from utils.storage import load_json, save_json
+from utils.json import load_json, save_json
 import config
 
 router = APIRouter(
@@ -15,7 +15,7 @@ router = APIRouter(
 )
 
 @router.get("/")
-def get_stats(current=Depends(require_user)):
+def get_stats(current=Depends(require_player)):
     return {
         "xp": current["xp"],
         "level": current["level"],
@@ -24,7 +24,7 @@ def get_stats(current=Depends(require_user)):
     }
 
 @router.post("/add_xp")
-def add_xp_to_user(amount: int, current=Depends(require_user)):
+def add_xp_to_user(amount: int, current=Depends(require_player)):
     users = load_json(config.USERS_FILE)
     user = User.from_dict(current)
 

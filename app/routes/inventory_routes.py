@@ -1,8 +1,8 @@
 # routes/inventory_routes.py
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from utils.deps import require_user
-from utils.storage import load_json, save_json
+from utils.roles import require_player
+from utils.json import load_json, save_json
 from services.inventory_service import add_item, remove_item, clear_inventory
 from models.user import User
 import config
@@ -17,13 +17,13 @@ def save_users(data):
 
 
 @router.get("/")
-def get_inventory(current=Depends(require_user)):
+def get_inventory(current=Depends(require_player)):
     user = User.from_dict(current)
     return user.inventory
 
 
 @router.post("/add")
-def add_item_route(item: str = Query(...), qty: int = Query(1), current=Depends(require_user)):
+def add_item_route(item: str = Query(...), qty: int = Query(1), current=Depends(require_player)):
     users = load_users()
     user = User.from_dict(current)
 
@@ -36,7 +36,7 @@ def add_item_route(item: str = Query(...), qty: int = Query(1), current=Depends(
 
 
 @router.post("/remove")
-def remove_item_route(item: str = Query(...), qty: int = Query(1), current=Depends(require_user)):
+def remove_item_route(item: str = Query(...), qty: int = Query(1), current=Depends(require_player)):
     users = load_users()
     user = User.from_dict(current)
 
@@ -51,7 +51,7 @@ def remove_item_route(item: str = Query(...), qty: int = Query(1), current=Depen
 
 
 @router.post("/clear")
-def clear_inventory_route(current=Depends(require_user)):
+def clear_inventory_route(current=Depends(require_player)):
     users = load_users()
     user = User.from_dict(current)
 

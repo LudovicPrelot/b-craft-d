@@ -1,7 +1,7 @@
 # routes/public_routes.py
 
 from fastapi import APIRouter
-from utils.storage import load_json
+from utils.json import load_json
 import config
 
 router = APIRouter(prefix="/public", tags=["Public"])

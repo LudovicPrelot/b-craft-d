@@ -1,15 +1,8 @@
 import json
 from pathlib import Path
 from typing import Any
-
-STORAGE = Path("storage")
-
-def load_json(name: str) -> dict[str, Any]:
-    path = STORAGE / name
-    if not path.exists():
-        raise FileNotFoundError(f"Fichier introuvable : {path}")
-    with open(path, "r", encoding="utf-8") as f:
-        return json.load(f)
+import config
+from utils.json import load_json
 
 def infer_type(value: Any) -> str:
     if isinstance(value, str):
@@ -36,9 +29,9 @@ def generate_dataclass(name: str, fields: dict[str, Any]) -> str:
 
 def main():
     # Chargement JSON
-    resources = load_json("resources.json")
-    recipes = load_json("recipes.json")
-    professions = load_json("professions.json")
+    resources = load_json(config.RESOURCES_FILE)
+    recipes = load_json(config.RECIPES_FILE)
+    professions = load_json(config.PROFESSIONS_FILE)
 
     # Sélection d’un exemple pour inférer les structures
     sample_resource = next(iter(resources.values()))

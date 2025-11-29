@@ -3,7 +3,7 @@
 from typing import Dict, Any, Tuple, List
 import json
 import config
-from utils.storage import load_json, save_json
+from utils.json import load_json, save_json
 from models.user import User
 
 def _load_recipes() -> Dict[str, dict]:

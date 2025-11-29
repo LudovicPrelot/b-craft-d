@@ -2,7 +2,7 @@
 
 from models.user import User
 from services.xp_service import add_xp
-from utils.storage import save_json, load_json
+from utils.json import save_json, load_json
 import uuid
 import config
 
