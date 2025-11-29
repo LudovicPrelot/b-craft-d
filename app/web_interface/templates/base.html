@@ -1,32 +1,33 @@
-<!doctype html>
-<html>
+<!-- app/web_interface/templates/base.html -->
+<!DOCTYPE html>
+<html lang="fr">
 <head>
-    <meta charset="utf-8"/>
-    <title>{% block title %}Craft Game{% endblock %}</title>
+    <meta charset="UTF-8">
+    <title>{% block title %}B-CraftD{% endblock %}</title>
+
     <link rel="stylesheet" href="/static/css/main.css">
-    <link rel="stylesheet" href="/static/css/public.css">
+    {% block head %}{% endblock %}
 </head>
 <body>
+
 <header>
     <nav>
-        <a href="/">Accueil</a> |
-        <a href="/public/resources">Ressources</a> |
-        <a href="/public/recipes">Recettes</a> |
-        <a href="/public/professions">Professions</a> |
-        <a href="/login">Connexion</a>
+        <a href="{{ url_for('page_index') }}">Accueil</a>
+
+        {% if user %}
+            <a href="{{ url_for('page_profile') }}">Mon profil</a>
+            <a href="#" onclick="logout()">Déconnexion</a>
+        {% else %}
+            <a href="{{ url_for('page_login') }}">Connexion</a>
+            <a href="{{ url_for('page_register') }}">Inscription</a>
+        {% endif %}
     </nav>
 </header>
 
-<hr/>
-
 <main>
-    {% block content %}{% endblock %}
+    {% block content %}
+    {% endblock %}
 </main>
-
-<footer>
-    <hr/>
-    <small>Craft Game — documentation publique</small>
-</footer>
 
 <script src="/static/js/utils.js"></script>
 {% block scripts %}{% endblock %}

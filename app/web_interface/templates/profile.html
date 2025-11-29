@@ -1,7 +1,11 @@
 {% extends "base.html" %}
-{% block title %}Profile{% endblock %}
 
 {% block content %}
-<h1>Profile</h1>
-<p>Fonctionnalités de profil à venir.</p>
+<h2>Mon Profil</h2>
+
+<p>Nom : {{ user.firstname }} {{ user.lastname }}</p>
+<p>Mail : {{ user.mail }}</p>
+<p>Profession : {{ user.profession }}</p>
+
+<a href="/pages/index">Retour</a>
 {% endblock %}

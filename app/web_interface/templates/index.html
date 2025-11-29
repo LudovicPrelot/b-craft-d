@@ -1,20 +1,16 @@
 {% extends "base.html" %}
 
-{% block title %}Accueil{% endblock %}
+{% block title %}Accueil - B-CraftD{% endblock %}
 
 {% block content %}
-<h1>Bienvenue dans le Craft Game</h1>
+<h1>Bienvenue sur B-CraftD</h1>
 
-<p>Références publiques :</p>
-<ul>
-    <li><a href="/public/resources">Liste des ressources (ingredients)</a></li>
-    <li><a href="/public/recipes">Liste des recettes</a></li>
-    <li><a href="/public/professions">Liste des professions</a></li>
-</ul>
-
-<p>Mon compte :</p>
-<ul>
-    <li><a href="/login">Se connecter</a></li>
-    <li><a href="/register">S'inscrire</a></li>
-</ul>
+{% if user %}
+<p>Bonjour, {{ user.firstname }} {{ user.lastname }}.</p>
+<a href="{{ url_for('page_profile') }}">Voir mon profil</a>
+{% else %}
+<p>Bienvenue ! Veuillez vous connecter ou créer un compte.</p>
+<a href="{{ url_for('page_login') }}">Connexion</a> |
+<a href="{{ url_for('page_register') }}">Inscription</a>
+{% endif %}
 {% endblock %}
