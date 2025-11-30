@@ -1,0 +1,12 @@
+/* web_interface/static/css/base.css */
+
+/* small utility to make .btn class used above */
+.btn {
+  display:inline-block;
+  background:#2563eb;
+  color:#fff;
+  padding:0.4rem 0.8rem;
+  border-radius:0.375rem;
+  text-decoration:none;
+}
+.btn:hover { opacity:0.9; }

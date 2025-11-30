@@ -1,0 +1,25 @@
+<!-- web_interface/templates/user/profile.html -->
+{% extends "base.html" %}
+{% block title %}Profil — B-CraftD{% endblock %}
+
+{% block content %}
+<h2>Mon profil</h2>
+<div id="profile" class="bg-white p-4 shadow rounded"></div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(async ()=>{
+  try{
+    const me = await httpGetJson('/api/user/me/');
+    document.getElementById('profile').innerHTML = `
+      <p><strong>Nom:</strong> ${me.firstname} ${me.lastname}</p>
+      <p><strong>Email:</strong> ${me.mail}</p>
+      <p><strong>Profession:</strong> ${me.profession}</p>
+    `;
+  }catch(e){
+    document.getElementById('profile').innerText = 'Erreur';
+  }
+})();
+</script>
+{% endblock %}

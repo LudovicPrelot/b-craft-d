@@ -1,0 +1,47 @@
+<!-- web_interface/templates/public/login.html -->
+{% extends "base.html" %}
+{% block title %}Connexion — B-CraftD{% endblock %}
+
+{% block content %}
+<div class="max-w-md mx-auto bg-white p-6 shadow rounded">
+  <h2 class="text-xl font-semibold mb-4">Connexion</h2>
+
+  <form id="login-form" class="space-y-4">
+    <div>
+      <label class="block text-sm">Identifiant</label>
+      <input name="login" required class="w-full border rounded px-3 py-2" />
+    </div>
+    <div>
+      <label class="block text-sm">Mot de passe</label>
+      <input name="password" type="password" required class="w-full border rounded px-3 py-2" />
+    </div>
+
+    <div class="flex items-center justify-between">
+      <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">Se connecter</button>
+      <a href="/public/register" class="text-sm text-blue-600">Créer un compte</a>
+    </div>
+  </form>
+
+  <div id="login-msg" class="mt-4 text-sm text-red-600"></div>
+</div>
+
+{% block scripts %}
+<script src="/static/js/auth.js"></script>
+<script>
+document.getElementById('login-form').addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  const f = e.target;
+  const payload = { login: f.login.value, password: f.password.value };
+  try {
+    const res = await httpPostJson('/api/public/auth/login', payload);
+    // save access token
+    localStorage.setItem('access_token', res.access_token);
+    // redirect
+    window.location.href = '/user/dashboard';
+  } catch (err) {
+    document.getElementById('login-msg').innerText = err.message || 'Erreur';
+  }
+});
+</script>
+{% endblock %}
+{% endblock %}

@@ -1,0 +1,19 @@
+<!-- web_interface/templates/user/stats.html -->
+{% extends "base.html" %}
+{% block title %}Stats — B-CraftD{% endblock %}
+
+{% block content %}
+<h2>Stats</h2>
+<div id="stats" class="bg-white p-4 shadow rounded"></div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(async ()=>{
+  try{
+    const s = await httpGetJson('/api/user/stats/');
+    document.getElementById('stats').innerHTML = '<pre>'+JSON.stringify(s, null, 2)+'</pre>';
+  }catch(e){document.getElementById('stats').innerText='Erreur';}
+})();
+</script>
+{% endblock %}

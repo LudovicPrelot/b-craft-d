@@ -1,17 +1,16 @@
+<!-- web_interface/templates/admin/index.html -->
 {% extends "base.html" %}
-{% block title %}Admin Dashboard{% endblock %}
+{% block title %}Administration — B-CraftD{% endblock %}
 
 {% block content %}
-<h1>Admin — Dashboard</h1>
-<div>
-  <ul>
-    <li><a href="/admin/users">Utilisateurs</a></li>
-    <li><a href="/admin/resources">Ressources</a></li>
-    <li><a href="/admin/recipes">Recettes</a></li>
-    <li><a href="/admin/professions">Professions</a></li>
-    <li><a href="/admin/loot">Loot</a></li>
-    <li><a href="/admin/stats">Stats</a></li>
-    <li><a href="/admin/settings">Paramètres</a></li>
-  </ul>
-</div>
+<h1 class="text-2xl font-semibold mb-4">Panel Administrateur</h1>
+
+<ul class="list-disc ml-6 space-y-2">
+  <li><a href="/admin/users" class="text-blue-600">Utilisateurs</a></li>
+  <li><a href="/admin/resources" class="text-blue-600">Ressources</a></li>
+  <li><a href="/admin/professions" class="text-blue-600">Professions</a></li>
+  <li><a href="/admin/recipes" class="text-blue-600">Recettes</a></li>
+  <li><a href="/admin/loot" class="text-blue-600">Tables de loot</a></li>
+  <li><a href="/admin/settings" class="text-blue-600">Paramètres</a></li>
+</ul>
 {% endblock %}

@@ -1,0 +1,20 @@
+<!-- web_interface/templates/user/loot.html -->
+{% extends "base.html" %}
+{% block title %}Loot — B-CraftD{% endblock %}
+
+{% block content %}
+<h2>Loot</h2>
+<div class="bg-white p-4 shadow rounded">
+  <form id="loot-form" class="flex gap-2 items-center">
+    <input name="environment" placeholder="environment" class="border px-2 py-1" />
+    <button class="btn">Collecter</button>
+  </form>
+
+  <div id="loot-results" class="mt-4"></div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/user/loot.js"></script>
+<script>initLoot();</script>
+{% endblock %}

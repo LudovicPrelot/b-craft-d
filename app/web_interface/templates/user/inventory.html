@@ -1,0 +1,24 @@
+<!-- web_interface/templates/user/inventory.html -->
+{% extends "base.html" %}
+{% block title %}Inventaire — B-CraftD{% endblock %}
+
+{% block content %}
+<h2>Inventaire</h2>
+<div class="bg-white p-4 shadow rounded">
+  <div id="inventory-table"></div>
+
+  <div class="mt-4">
+    <h4>Ajouter un item</h4>
+    <form id="add-item-form" class="flex gap-2">
+      <input name="item" placeholder="item" class="border px-2 py-1" required />
+      <input name="qty" type="number" value="1" class="border px-2 py-1 w-20" />
+      <button class="btn">Ajouter</button>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/user/inventory.js"></script>
+<script>initInventory();</script>
+{% endblock %}

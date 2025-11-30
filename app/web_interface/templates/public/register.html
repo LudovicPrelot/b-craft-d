@@ -1,0 +1,46 @@
+<!-- web_interface/templates/public/register.html -->
+{% extends "base.html" %}
+{% block title %}Inscription — B-CraftD{% endblock %}
+
+{% block content %}
+<div class="max-w-md mx-auto bg-white p-6 shadow rounded">
+  <h2 class="text-xl font-semibold mb-4">Créer un compte</h2>
+
+  <form id="register-form" class="space-y-3">
+    <input name="firstname" placeholder="Prénom" class="w-full border rounded px-3 py-2" />
+    <input name="lastname" placeholder="Nom" class="w-full border rounded px-3 py-2" />
+    <input name="mail" placeholder="Email" class="w-full border rounded px-3 py-2" />
+    <input name="login" placeholder="Identifiant" required class="w-full border rounded px-3 py-2" />
+    <input name="password" type="password" placeholder="Mot de passe" required class="w-full border rounded px-3 py-2" />
+    <div class="flex justify-end">
+      <button class="bg-green-600 text-white px-4 py-2 rounded">Créer</button>
+    </div>
+  </form>
+
+  <div id="register-msg" class="mt-3 text-sm"></div>
+</div>
+
+{% block scripts %}
+<script>
+document.getElementById('register-form').addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  const f = e.target;
+  const payload = {
+    firstname: f.firstname.value,
+    lastname: f.lastname.value,
+    mail: f.mail.value,
+    login: f.login.value,
+    password: f.password.value
+  };
+  try {
+    const res = await httpPostJson('/api/admin/users/create', payload); // if user creation is admin-only, change endpoint accordingly
+    document.getElementById('register-msg').innerText = 'Compte créé (id: '+res.id+')';
+    // optionally auto-redirect to login
+    setTimeout(()=>window.location.href='/public/login',800);
+  } catch (err) {
+    document.getElementById('register-msg').innerText = err.message || 'Erreur';
+  }
+});
+</script>
+{% endblock %}
+{% endblock %}

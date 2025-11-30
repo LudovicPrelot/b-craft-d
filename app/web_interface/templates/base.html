@@ -1,35 +1,50 @@
-<!-- app/web_interface/templates/base.html -->
-<!DOCTYPE html>
+<!-- web_interface/templates/base.html -->
+<!doctype html>
 <html lang="fr">
 <head>
-    <meta charset="UTF-8">
-    <title>{% block title %}B-CraftD{% endblock %}</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>{% block title %}B-CraftD{% endblock %}</title>
 
-    <link rel="stylesheet" href="/static/css/main.css">
-    {% block head %}{% endblock %}
+  <!-- Tailwind via CDN (play) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Optional small custom stylesheet -->
+  <link rel="stylesheet" href="/static/css/base.css" />
+
+  {% block head %}{% endblock %}
 </head>
-<body>
+<body class="bg-slate-50 text-slate-800 min-h-screen">
 
-<header>
-    <nav>
-        <a href="{{ url_for('page_index') }}">Accueil</a>
+  <!-- top navbar -->
+  <header class="bg-white shadow">
+    <div class="container mx-auto px-4 py-3 flex items-center justify-between">
+      <a href="/" class="font-bold text-xl">B-CraftD</a>
+      <nav class="flex items-center gap-3">
+        <a href="/public/professions" class="text-sm hover:underline">Professions</a>
+        <a href="/public/resources" class="text-sm hover:underline">Ressources</a>
+        <a href="/public/recipes" class="text-sm hover:underline">Recettes</a>
+        <a id="nav-login" href="/public/login" class="text-sm hover:underline">Connexion</a>
+        <a id="nav-register" href="/public/register" class="text-sm hover:underline">Inscription</a>
+        <button id="nav-logout" class="hidden text-sm text-red-600">Déconnexion</button>
+      </nav>
+    </div>
+  </header>
 
-        {% if user %}
-            <a href="{{ url_for('page_profile') }}">Mon profil</a>
-            <a href="#" onclick="logout()">Déconnexion</a>
-        {% else %}
-            <a href="{{ url_for('page_login') }}">Connexion</a>
-            <a href="{{ url_for('page_register') }}">Inscription</a>
-        {% endif %}
-    </nav>
-</header>
+  <main class="container mx-auto px-4 py-8">
+    {% block content %}{% endblock %}
+  </main>
 
-<main>
-    {% block content %}
-    {% endblock %}
-</main>
+  <footer class="bg-white border-t py-4 mt-12">
+    <div class="container mx-auto px-4 text-sm text-slate-600">
+      © B-CraftD — crafting simulator
+    </div>
+  </footer>
 
-<script src="/static/js/utils.js"></script>
-{% block scripts %}{% endblock %}
+  <!-- Core JS helpers -->
+  <script src="/static/js/http.js"></script>
+  <script src="/static/js/auth.js"></script>
+
+  {% block scripts %}{% endblock %}
 </body>
 </html>
