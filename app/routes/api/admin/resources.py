@@ -1,57 +1,31 @@
 # app/routes/api/admin/resources.py
 
-from fastapi import APIRouter, Depends, HTTPException
-from utils.json import load_json, save_json
+from fastapi import APIRouter, Depends, Body
 from utils.roles import require_admin
 from utils.logger import get_logger
+from utils.crud import list_all, get_one, create_one, update_one, delete_one
 import config
 
 logger = get_logger(__name__)
 
 router = APIRouter(prefix="/resources", tags=["Admin - Resources"], dependencies=[Depends(require_admin)])
 
-@router.post("/", dependencies=[Depends(require_admin)])
-def create_resource(payload):
-    resource_id = payload.get("id")
-    logger.info(f"➕ Modérateur: Création de la ressource '{resource_id}'")
-    
-    try:
-        data = load_json(config.RESOURCES_FILE)
-        if payload["id"] in data:
-            logger.warning(f"⚠️  Ressource '{resource_id}' existe déjà")
-            raise HTTPException(400, "Resource already exists")
-        
-        data[payload["id"]] = payload
-        save_json(config.RESOURCES_FILE, data)
-        
-        logger.info(f"✅ Ressource '{resource_id}' créée avec succès")
-        return payload
-        
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"❌ Erreur lors de la création de la ressource", exc_info=True)
-        raise HTTPException(500, "Failed to create resource")
+@router.get("/")
+def list_recipes():
+    return list_all(config.RESOURCES_FILE, "resources", logger)
 
+@router.get("/{recipe_id}")
+def get_recipe(recipe_id: str):
+    return get_one(config.RESOURCES_FILE, recipe_id, "resource", logger)
 
-@router.delete("/{rid}", dependencies=[Depends(require_admin)])
-def delete_resource(rid: str):
-    logger.info(f"🗑️  Modérateur: Suppression de la ressource '{rid}'")
-    
-    try:
-        data = load_json(config.RESOURCES_FILE)
-        if rid not in data:
-            logger.warning(f"⚠️  Ressource '{rid}' non trouvée")
-            raise HTTPException(404, "Resource not found")
-        
-        del data[rid]
-        save_json(config.RESOURCES_FILE, data)
-        
-        logger.info(f"✅ Ressource '{rid}' supprimée avec succès")
-        return {"status": "deleted"}
-        
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"❌ Erreur lors de la suppression de la ressource", exc_info=True)
-        raise HTTPException(500, "Failed to delete resource")
+@router.post("/")
+def create_recipe(payload: dict = Body(...)):
+    return create_one(config.RESOURCES_FILE, payload, "resource", logger)
+
+@router.put("/{recipe_id}")
+def update_recipe(recipe_id: str, payload: dict = Body(...)):
+    return update_one(config.RESOURCES_FILE, recipe_id, payload, "resource", logger)
+
+@router.delete("/{recipe_id}")
+def delete_recipe(recipe_id: str):
+    return delete_one(config.RESOURCES_FILE, recipe_id, "resource", logger)
