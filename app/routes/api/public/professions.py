@@ -1,20 +1,15 @@
 # app/routes/api/public/professions.py
-from fastapi import APIRouter, HTTPException
-from utils.json import load_json
+
+from fastapi import APIRouter
 from utils.logger import get_logger
+from utils.crud import list_all
 import config
 
 logger = get_logger(__name__)
 
-router = APIRouter(prefix="/professions", tags=["Professions"])
+router = APIRouter(prefix="/professions", tags=["Public - Professions"])
 
-@router.get("")
+@router.get("/")
 def list_professions():
-    logger.info("🌍 Accès public: Liste des professions")
-    try:
-        professions = load_json(config.PROFESSIONS_FILE)
-        logger.debug(f"   → {len(professions)} profession(s) disponible(s)")
-        return {"professions": list(professions.values())}
-    except Exception as e:
-        logger.error("❌ Erreur lors de la récupération des professions", exc_info=True)
-        raise HTTPException(500, "Failed to retrieve professions")
+    items = list_all(config.PROFESSIONS_FILE, "professions", logger)
+    return {"professions": items}  # Format public avec clé

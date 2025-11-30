@@ -1,58 +1,49 @@
-# app/routes/api/admin/profession.py
+# app/routes/api/admin/professions.py
 
-from http.client import HTTPException
-from utils.json import load_json, save_json
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Body
 from utils.roles import require_admin
 from utils.logger import get_logger
+from utils.crud import list_all, get_one, create_one, update_one, delete_one
 import config
 
 logger = get_logger(__name__)
 
 router = APIRouter(prefix="/professions", tags=["Admin - Professions"], dependencies=[Depends(require_admin)])
 
-@router.post("/", dependencies=[Depends(require_admin)])
-def create_prof(payload: dict):
-    prof_id = payload.get("id")
-    logger.info(f"➕ Modérateur: Création de la profession '{prof_id}'")
-    
-    try:
-        data = load_json(config.PROFESSIONS_FILE)
-        if payload["id"] in data:
-            logger.warning(f"⚠️  Profession '{prof_id}' existe déjà")
-            raise HTTPException(400, "Profession existe déjà")
-        
-        data[payload["id"]] = payload
-        save_json(config.PROFESSIONS_FILE, data)
-        
-        logger.info(f"✅ Profession '{prof_id}' créée avec succès")
-        return payload
-        
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"❌ Erreur lors de la création de la profession", exc_info=True)
-        raise HTTPException(500, "Failed to create profession")
+@router.get("/")
+def list_professions():
+    return list_all(config.PROFESSIONS_FILE, "professions", logger)
 
+@router.get("/{profession_id}")
+def get_profession(profession_id: str):
+    return get_one(config.PROFESSIONS_FILE, profession_id, "profession", logger)
 
-@router.delete("/{pid}", dependencies=[Depends(require_admin)])
-def delete_prof(pid: str):
-    logger.info(f"🗑️  Modérateur: Suppression de la profession '{pid}'")
+@router.post("/")
+def create_profession(payload: dict = Body(...)):
+    return create_one(config.PROFESSIONS_FILE, payload, "profession", logger)
+
+@router.put("/{profession_id}")
+def update_profession(profession_id: str, payload: dict = Body(...)):
+    return update_one(config.PROFESSIONS_FILE, profession_id, payload, "profession", logger)
+
+@router.delete("/{profession_id}")
+def delete_profession(profession_id: str):
+    return delete_one(config.PROFESSIONS_FILE, profession_id, "profession", logger)
+
+@router.post("/{profession_id}/add_resource")
+def add_resource_to_profession(profession_id: str, resource_id: str = Body(..., embed=True)):
+    """Exemple de route custom avec logique spécifique"""
+    logger.info(f"➕ Ajout ressource '{resource_id}' à profession '{profession_id}'")
     
-    try:
-        data = load_json(config.PROFESSIONS_FILE)
-        if pid not in data:
-            logger.warning(f"⚠️  Profession '{pid}' non trouvée")
-            raise HTTPException(404)
-        
-        del data[pid]
-        save_json(config.PROFESSIONS_FILE, data)
-        
-        logger.info(f"✅ Profession '{pid}' supprimée avec succès")
-        return {"status": "deleted"}
-        
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"❌ Erreur lors de la suppression de la profession", exc_info=True)
-        raise HTTPException(500, "Failed to delete profession")
+    # Récupère la profession
+    profession = get_one(config.PROFESSIONS_FILE, profession_id, "profession", logger)
+    
+    # Logique custom
+    if "resources_found" not in profession:
+        profession["resources_found"] = []
+    
+    if resource_id not in profession["resources_found"]:
+        profession["resources_found"].append(resource_id)
+    
+    # Mise à jour
+    return update_one(config.PROFESSIONS_FILE, profession_id, profession, "profession", logger, merge=False)  # Remplacement complet
