@@ -1,38 +1,30 @@
 # app/main.py
 """
-Point d'entrée FastAPI.
- - Monte les fichiers statiques du FRONT
- - Configure les templates Jinja2
- - Inclut les routes API
- - Inclut routes/pages_routes.py pour le FRONT
- - Configure le logging et la gestion d'erreurs
+Point d'entrée FastAPI principal.
+ - Gère le routing global
+ - Charge les templates Jinja2
+ - Monte les fichiers statiques
+ - Ajoute middlewares + logging + handlers d’erreurs
+ - Sépare API et routes FRONT (pages/)
 """
 
 from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import RedirectResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-import config
 from utils.logger import get_logger
-from routes import (
-    auth_routes,
-    users_routes,
-    resources_routes,
-    recipes_routes,
-    professions_routes,
-    inventory_routes,
-    crafting_routes,
-    loot_routes,
-    stats_routes,
-    quests_routes,
-    public_routes,
-    admin_routes,
-    admin_settings_routes,
-)
-from routes.pages_routes import router as pages_router
+from utils.deps import get_current_user_optional
+
+# API Routers
+from routes.api import router as api_router
+
+# FRONT Routers (nouveaux)
+from routes.front import router as front_router
+
+import config
 
 # Initialise le logger pour ce module
 logger = get_logger(__name__)
@@ -112,38 +104,20 @@ async def log_requests(request: Request, call_next):
     return response
 
 
-# -------------------------
-# Redirect root → index.html
-# -------------------------
-@app.get("/")
-def root():
-    logger.debug("🏠 Redirection de / vers /home")
-    return RedirectResponse("/home")
+# --------------------------------------
+# API Routers
+# --------------------------------------
+app.include_router(api_router)
 
-
-# -------------------------
-# API routers
-# -------------------------
-logger.info("📦 Chargement des routes API...")
-app.include_router(auth_routes.router)
-app.include_router(users_routes.router)
-app.include_router(resources_routes.router)
-app.include_router(recipes_routes.router)
-app.include_router(professions_routes.router)
-app.include_router(inventory_routes.router)
-app.include_router(crafting_routes.router)
-app.include_router(loot_routes.router)
-app.include_router(stats_routes.router)
-app.include_router(quests_routes.router)
-app.include_router(public_routes.router)
-app.include_router(admin_routes.router)
-app.include_router(admin_settings_routes.router)
+logger.info("🌐 Chargement des routes de pages HTML...")
+# --------------------------------------
+# FRONT Routers (Pages HTML)
+# --------------------------------------
+app.include_router(front_router)
 
 # -------------------------
 # Pages HTML
 # -------------------------
-logger.info("🌐 Chargement des routes de pages HTML...")
-app.include_router(pages_router)
 
 logger.info("✅ Application FastAPI prête!")
 logger.info(f"📚 Documentation API disponible sur /docs et /redoc")

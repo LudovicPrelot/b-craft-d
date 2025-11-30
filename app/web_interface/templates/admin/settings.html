@@ -1,16 +1,17 @@
+<!-- web_interface/templates/admin/settings.html -->
 {% extends "base.html" %}
-{% block title %}Admin — Paramètres{% endblock %}
+{% block title %}Admin — Settings{% endblock %}
 
 {% block content %}
-<h1>Paramètres du jeu</h1>
-<form id="settingsForm" class="admin-form">
-    <label><input type="checkbox" name="enable_loot"> Activer loot</label><br>
-    <label><input type="checkbox" name="enable_stats"> Activer stats</label><br>
-    <label><input type="checkbox" name="enable_quests"> Activer quêtes</label><br>
-    <button>Sauvegarder</button>
-</form>
+<h2>Settings</h2>
+<div id="settings-block" class="bg-white p-4 shadow rounded"></div>
 {% endblock %}
 
 {% block scripts %}
-<script src="/static/js/admin_settings.js"></script>
+<script>
+(async ()=>{
+  const s = await httpGetJson('/api/admin/settings/');
+  document.getElementById('settings-block').innerHTML = '<pre>'+JSON.stringify(s,null,2)+'</pre>';
+})();
+</script>
 {% endblock %}

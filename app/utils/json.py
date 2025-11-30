@@ -1,7 +1,7 @@
 # app/utils/json.py
 from pathlib import Path
-import json
-from typing import Any, Optional
+from typing import Any, Dict, Optional
+import json, config
 
 
 def load_json(path: str | Path) -> Optional[Any]:
@@ -35,3 +35,9 @@ def save_json(path: str | Path, data: Any) -> None:
 
     # atomic replace
     tmp.replace(p)
+
+def load_users() -> Dict[str, Any]:
+    return load_json(config.USERS_FILE) or {}
+
+def save_users(d: Dict[str, Any]) -> None:
+    save_json(config.USERS_FILE, d)

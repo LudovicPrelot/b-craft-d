@@ -1,34 +1,18 @@
+<!-- web_interface/templates/admin/recipes.html -->
 {% extends "base.html" %}
 {% block title %}Admin — Recettes{% endblock %}
 
 {% block content %}
-<h1>Gestion des recettes</h1>
-<button id="refresh">Rafraîchir</button>
-<pre id="out"></pre>
-
-<form id="formCreate">
-  <input name="id" placeholder="id" required>
-  <input name="output" placeholder="output" required>
-  <textarea name="ingredients" placeholder='{"argile":2,"calcaire":1}'></textarea>
-  <input name="required_profession" placeholder="required_profession">
-  <button>Créer</button>
-</form>
+<h2>Gestion des recettes</h2>
+<div id="admin-recipes" class="bg-white p-4 shadow rounded"></div>
 {% endblock %}
 
 {% block scripts %}
 <script>
-document.getElementById('refresh').onclick = async ()=>{
-  const r = await fetch('/recipes/', { headers: {'Authorization':'Bearer '+localStorage.getItem('access_token')} });
-  document.getElementById('out').textContent = JSON.stringify(await r.json(), null, 2);
-};
-document.getElementById('formCreate').onsubmit = async e=>{
-  e.preventDefault();
-  const f = new FormData(e.target);
-  let ingredients;
-  try { ingredients = JSON.parse(f.get('ingredients')); } catch(e){ alert('Ingredients must be valid JSON'); return; }
-  const body = { id: f.get('id'), output: f.get('output'), ingredients: ingredients, required_profession: f.get('required_profession') };
-  const r = await fetch('/recipes/', { method:'POST', headers: {'Content-Type':'application/json','Authorization':'Bearer '+localStorage.getItem('access_token')}, body: JSON.stringify(body) });
-  if(r.ok){ alert('created'); document.getElementById('refresh').click(); } else alert('Erreur');
-};
+async function loadAdminRecipes(){
+  const data = await httpGetJson('/api/admin/recipes/');
+  document.getElementById('admin-recipes').innerHTML = JSON.stringify(data,null,2);
+}
+loadAdminRecipes();
 </script>
 {% endblock %}

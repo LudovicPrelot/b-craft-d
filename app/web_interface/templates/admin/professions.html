@@ -1,32 +1,18 @@
+<!-- web_interface/templates/admin/professions.html -->
 {% extends "base.html" %}
 {% block title %}Admin — Professions{% endblock %}
 
 {% block content %}
-<h1>Gestion des professions</h1>
-<button id="refresh">Rafraîchir</button>
-<pre id="out"></pre>
-
-<form id="formCreate">
-  <input name="id" placeholder="id" required>
-  <input name="name" placeholder="name" required>
-  <input name="subclasses" placeholder='comma separated subclasses'>
-  <input name="biomes" placeholder='comma separated biomes'>
-  <button>Créer</button>
-</form>
+<h2>Gestion des professions</h2>
+<div id="admin-professions" class="bg-white p-4 shadow rounded"></div>
 {% endblock %}
 
 {% block scripts %}
 <script>
-document.getElementById('refresh').onclick = async ()=>{
-  const r = await fetch('/professions/', { headers: {'Authorization':'Bearer '+localStorage.getItem('access_token')} });
-  document.getElementById('out').textContent = JSON.stringify(await r.json(), null, 2);
-};
-document.getElementById('formCreate').onsubmit = async e=>{
-  e.preventDefault();
-  const f = new FormData(e.target);
-  const body = { id: f.get('id'), name: f.get('name'), subclasses: (f.get('subclasses')||'').split(',').map(s=>s.trim()).filter(Boolean), biomes: (f.get('biomes')||'').split(',').map(s=>s.trim()).filter(Boolean) };
-  const r = await fetch('/professions/', { method:'POST', headers: {'Content-Type':'application/json','Authorization':'Bearer '+localStorage.getItem('access_token')}, body: JSON.stringify(body) });
-  if(r.ok){ alert('created'); document.getElementById('refresh').click(); } else alert('Erreur');
-};
+async function loadAdminProfessions(){
+  const data = await httpGetJson('/api/admin/professions/');
+  document.getElementById('admin-professions').innerText = JSON.stringify(data, null, 2);
+}
+loadAdminProfessions();
 </script>
 {% endblock %}

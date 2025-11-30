@@ -1,21 +1,13 @@
+<!-- web_interface/templates/public/recipes.html -->
 {% extends "base.html" %}
-{% block title %}Recettes{% endblock %}
+{% block title %}Recettes — B-CraftD{% endblock %}
 
 {% block content %}
-<h1>Recettes</h1>
-<table id="recipesTable" class="public-table">
-    <thead><tr><th>ID</th><th>Output</th><th>Ingredients</th></tr></thead>
-    <tbody></tbody>
-</table>
+<h2 class="text-lg font-semibold mb-4">Recettes</h2>
+<div id="recipes-list" class="bg-white p-4 shadow rounded"></div>
 {% endblock %}
 
 {% block scripts %}
-<script src="/static/js/public_tables.js"></script>
-<script>
-loadPublicTable("/public/recipes", "recipesTable", item => ({
-    id: item.id || item["id"],
-    output: item.output || item["output"],
-    ingredients: JSON.stringify(item.ingredients || item["ingredients"] || {})
-}));
-</script>
+<script src="/static/js/public/recipes.js"></script>
+<script>loadRecipes();</script>
 {% endblock %}

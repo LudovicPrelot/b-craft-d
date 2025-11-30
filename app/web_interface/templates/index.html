@@ -1,16 +1,37 @@
+<!-- web_interface/templates/index.html -->
 {% extends "base.html" %}
-
-{% block title %}Accueil - B-CraftD{% endblock %}
+{% block title %}Accueil — B-CraftD{% endblock %}
 
 {% block content %}
-<h1>Bienvenue sur B-CraftD</h1>
+<div class="prose mx-auto">
+  <h1>Bienvenue sur B-CraftD</h1>
+  <p>Simulation de crafting réaliste — trouvez des ressources, fabriquez des objets, gérez votre inventaire et progressez.</p>
 
-{% if user %}
-<p>Bonjour, {{ user.firstname }} {{ user.lastname }}.</p>
-<a href="{{ url_for('page_profile') }}">Voir mon profil</a>
-{% else %}
-<p>Bienvenue ! Veuillez vous connecter ou créer un compte.</p>
-<a href="{{ url_for('page_login') }}">Connexion</a> |
-<a href="{{ url_for('page_register') }}">Inscription</a>
-{% endif %}
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
+    <div class="card p-4 bg-white shadow rounded">
+      <h3 class="font-semibold">Explorer</h3>
+      <p>Consultez les ressources, recettes et professions publiques.</p>
+      <p class="mt-3">
+        <a class="btn" href="/public/resources">Ressources</a>
+        <a class="btn ml-2" href="/public/recipes">Recettes</a>
+      </p>
+    </div>
+
+    <div class="card p-4 bg-white shadow rounded">
+      <h3 class="font-semibold">Jouer</h3>
+      <p>Connectez-vous et accédez à votre dashboard, inventaire et crafting.</p>
+      <p class="mt-3">
+        <a class="btn" href="/public/login">Se connecter</a>
+      </p>
+    </div>
+
+    <div class="card p-4 bg-white shadow rounded">
+      <h3 class="font-semibold">Administration</h3>
+      <p>Outils admin pour gérer ressources, professions, recettes et tables de loot.</p>
+      <p class="mt-3">
+        <a class="btn" href="/admin">Panel admin</a>
+      </p>
+    </div>
+  </div>
+</div>
 {% endblock %}

@@ -1,0 +1,17 @@
+<!-- web_interface/templates/user/index.html -->
+{% extends "base.html" %}
+{% block title %}Espace utilisateur — B-CraftD{% endblock %}
+
+{% block content %}
+<h1 class="text-2xl font-semibold mb-4">Espace utilisateur</h1>
+
+<ul class="list-disc ml-6 space-y-2">
+  <li><a href="/user/dashboard" class="text-blue-600">Dashboard</a></li>
+  <li><a href="/user/profile" class="text-blue-600">Profil</a></li>
+  <li><a href="/user/inventory" class="text-blue-600">Inventaire</a></li>
+  <li><a href="/user/crafting" class="text-blue-600">Crafting</a></li>
+  <li><a href="/user/loot" class="text-blue-600">Loot</a></li>
+  <li><a href="/user/devices" class="text-blue-600">Appareils</a></li>
+  <li><a href="/user/stats" class="text-blue-600">Statistiques</a></li>
+</ul>
+{% endblock %}
