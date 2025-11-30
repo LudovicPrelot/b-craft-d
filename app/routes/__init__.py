@@ -1,4 +1,4 @@
-# routes/__init__.py
+# app/routes/__init__.py
 
 from .api import router as api_router
 from .front import router as front_router

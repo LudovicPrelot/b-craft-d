@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Erreur interne{% endblock %}
+
+{% block content %}
+<div class="text-center mt-10">
+    <h1 class="text-3xl font-semibold text-red-600">500 — Erreur interne du serveur</h1>
+    <p class="mt-4">Une erreur inattendue est survenue.</p>
+
+    {% if message %}
+    <p class="text-gray-500 mt-2">{{ message }}</p>
+    {% endif %}
+
+    <a href="/" class="text-blue-600 underline mt-4 block">Retour à l'accueil</a>
+</div>
+{% endblock %}

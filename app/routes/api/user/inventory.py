@@ -1,4 +1,4 @@
-# app/routes/api/user/devices.py
+# app/routes/api/user/invetory.py
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from utils.roles import require_player

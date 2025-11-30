@@ -6,9 +6,20 @@ from fastapi.templating import Jinja2Templates
 from utils.deps import get_current_user_optional, get_current_user_required
 from utils.roles import require_admin, require_moderator
 
+from .admin import router as admin_router
+from .moderator import router as moderator_router
+from .public import router as public_router
+from .user import router as user_router
+
 import config
 
-router = APIRouter()
+router = APIRouter(include_in_schema=False)
+
+router.include_router(admin_router)
+router.include_router(moderator_router)
+router.include_router(public_router)
+router.include_router(user_router)
+
 templates = Jinja2Templates(directory=str(config.TEMPLATES_DIR))
 
 # -------------------------
@@ -42,13 +53,20 @@ async def user_index(request: Request, user=Depends(get_current_user_required)):
     )
 
 # -------------------------
+# MODERATOR
+# -------------------------
+@router.get("/moderator", response_class=HTMLResponse)
+async def moderator_index(request: Request, user=Depends(require_moderator)):
+    return templates.TemplateResponse(
+        "moderator/index.html",
+        {"request": request, "user": user}
+    )
+
+# -------------------------
 # ADMIN
 # -------------------------
 @router.get("/admin", response_class=HTMLResponse)
-async def admin_index(
-    request: Request,
-    user=Depends(require_admin)  # must be admin
-):
+async def admin_index(request: Request, user=Depends(require_admin)):  # must be admin
     return templates.TemplateResponse(
         "admin/index.html",
         {"request": request, "user": user}

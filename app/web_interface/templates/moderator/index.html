@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}Modération — B-CraftD{% endblock %}
+
+{% block content %}
+<h1 class="text-2xl font-semibold mb-4">Espace modérateur</h1>
+
+<ul class="list-disc ml-6 space-y-2">
+  <li><a href="/moderator/dashboard" class="text-blue-600">Dashboard Modération</a></li>
+  <li><a href="/moderator/users" class="text-blue-600">Gestion limitée des utilisateurs</a></li>
+  <li><a href="/moderator/logs" class="text-blue-600">Logs du système</a></li>
+</ul>
+{% endblock %}

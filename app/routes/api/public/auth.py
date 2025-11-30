@@ -1,4 +1,4 @@
-# routes/api/public/auth.py
+# app/routes/api/public/auth.py
 
 from fastapi import APIRouter, Body, Request, Response, HTTPException, Depends
 from typing import Dict, Any, Optional

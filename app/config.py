@@ -42,6 +42,11 @@ LOGS_DIR = BASE_DIR / "logs"
 TEMPLATES_DIR = WEB_INTERFACE_DIR / "templates"
 STATIC_DIR = WEB_INTERFACE_DIR / "static"
 
+ADMIN_TEMPLATES_DIR = TEMPLATES_DIR / "admin"
+MODERATOR_TEMPLATES_DIR = TEMPLATES_DIR / "moderator"
+USER_TEMPLATES_DIR = TEMPLATES_DIR / "user"
+PUBLIC_TEMPLATES_DIR = TEMPLATES_DIR / "public"
+
 FAILED_LOGINS_FILE = STORAGE_DIR / "failed_logins.json"
 LOOT_ENVIRONMENT_FILE = STORAGE_DIR / "loot_environment.json"
 LOOT_TABLES_FILE = STORAGE_DIR / "loot_tables.json"
@@ -56,6 +61,11 @@ USERS_FILE = STORAGE_DIR / "users.json"
 # Make sure dirs exist in dev
 STORAGE_DIR.mkdir(parents=True, exist_ok=True)
 WEB_INTERFACE_DIR.mkdir(parents=True, exist_ok=True)
+LOGS_DIR.mkdir(parents=True, exist_ok=True)
 TEMPLATES_DIR.mkdir(parents=True, exist_ok=True)
 STATIC_DIR.mkdir(parents=True, exist_ok=True)
-LOGS_DIR.mkdir(parents=True, exist_ok=True)
+
+ADMIN_TEMPLATES_DIR.mkdir(parents=True, exist_ok=True)
+MODERATOR_TEMPLATES_DIR.mkdir(parents=True, exist_ok=True)
+USER_TEMPLATES_DIR.mkdir(parents=True, exist_ok=True)
+PUBLIC_TEMPLATES_DIR.mkdir(parents=True, exist_ok=True)

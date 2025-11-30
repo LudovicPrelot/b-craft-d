@@ -17,19 +17,33 @@
 <body class="bg-slate-50 text-slate-800 min-h-screen">
 
   <!-- top navbar -->
-  <header class="bg-white shadow">
-    <div class="container mx-auto px-4 py-3 flex items-center justify-between">
-      <a href="/" class="font-bold text-xl">B-CraftD</a>
-      <nav class="flex items-center gap-3">
-        <a href="/public/professions" class="text-sm hover:underline">Professions</a>
-        <a href="/public/resources" class="text-sm hover:underline">Ressources</a>
-        <a href="/public/recipes" class="text-sm hover:underline">Recettes</a>
-        <a id="nav-login" href="/public/login" class="text-sm hover:underline">Connexion</a>
-        <a id="nav-register" href="/public/register" class="text-sm hover:underline">Inscription</a>
-        <button id="nav-logout" class="hidden text-sm text-red-600">Déconnexion</button>
-      </nav>
-    </div>
-  </header>
+  <<header class="bg-gray-900 text-white px-4 py-3 flex justify-between items-center">
+    <a href="/" class="text-xl font-bold">B-CraftD</a>
+      <nav class="space-x-6">
+
+        <!-- PUBLIC -->
+        <a href="/public" class="hover:text-gray-300">Public</a>
+
+        {% if user %}
+            <!-- USER -->
+            <a href="/user" class="hover:text-gray-300">Espace utilisateur</a>
+
+            {% if user.role == "moderator" or user.role == "admin" %}
+                <a href="/moderator" class="hover:text-gray-300">Modération</a>
+            {% endif %}
+
+            {% if user.role == "admin" %}
+                <a href="/admin" class="hover:text-gray-300">Admin</a>
+            {% endif %}
+
+            <!-- Logout -->
+            <a href="/public/logout" class="text-red-300 hover:text-red-400">Déconnexion</a>
+
+        {% else %}
+            <a href="/public/login" class="hover:text-gray-300">Connexion</a>
+        {% endif %}
+    </nav>
+</header>
 
   <main class="container mx-auto px-4 py-8">
     {% block content %}{% endblock %}

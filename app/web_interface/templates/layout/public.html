@@ -1,0 +1,18 @@
+{% extends "layout/base.html" %}
+
+{% block title %}B-CraftD – Public{% endblock %}
+
+{% block nav %}
+<a href="/" class="px-3 hover:underline">Accueil</a>
+<a href="/login" class="px-3 hover:underline">Connexion</a>
+<a href="/register" class="px-3 hover:underline">Inscription</a>
+
+<!-- Référentiel public -->
+<a href="/public/resources" class="px-3 hover:underline">Ressources</a>
+<a href="/public/professions" class="px-3 hover:underline">Professions</a>
+<a href="/public/recipes" class="px-3 hover:underline">Recettes</a>
+{% endblock %}
+
+{% block content %}
+{% block public_content %}{% endblock %}
+{% endblock %}

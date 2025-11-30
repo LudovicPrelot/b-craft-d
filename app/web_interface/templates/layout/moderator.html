@@ -1,0 +1,18 @@
+{% extends "layout/base.html" %}
+
+{% block title %}B-CraftD – Modération{% endblock %}
+
+{% block nav %}
+<a href="/" class="px-3 hover:underline">Accueil</a>
+<a href="/moderator/dashboard" class="px-3 hover:underline">Modération</a>
+<a href="/moderator/users" class="px-3 hover:underline">Utilisateurs</a>
+
+<!-- Logout -->
+<form action="/logout" method="post" class="inline">
+    <button class="px-3 text-red-300 hover:text-red-500">Déconnexion</button>
+</form>
+{% endblock %}
+
+{% block content %}
+{% block moderator_content %}{% endblock %}
+{% endblock %}

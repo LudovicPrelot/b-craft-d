@@ -6,6 +6,7 @@ from .public import router as public_router
 from .user import router as user_router
 
 router = APIRouter(prefix="/api")
+
 router.include_router(admin_router)
 router.include_router(moderator_router)
 router.include_router(public_router)

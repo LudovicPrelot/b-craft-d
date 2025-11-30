@@ -12,7 +12,6 @@ router = APIRouter(prefix="/admin")
 
 router.include_router(loot_router)
 router.include_router(professions_router)
-router.include_router(resources_router)
 router.include_router(recipes_router)
 router.include_router(resources_router)
 router.include_router(settings_router)

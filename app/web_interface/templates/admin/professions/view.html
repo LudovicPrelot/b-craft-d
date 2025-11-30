@@ -1,0 +1,15 @@
+{% extends "layout/admin.html" %}
+{% block content %}
+
+<h1>Profession : {{ profession.id }}</h1>
+
+<ul>
+    <li>ID : {{ profession.id }}</li>
+    <li>Nom : {{ profession.name }}</li>
+</ul>
+
+<a href="/admin/professions/{{ profession.id }}/edit" class="btn btn-warning">Modifier</a>
+<a href="/admin/professions/" class="btn btn-secondary">Retour</a>
+
+<script src="/static/js/admin/professions.js"></script>
+{% endblock %}

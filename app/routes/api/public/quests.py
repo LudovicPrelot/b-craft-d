@@ -7,7 +7,7 @@ import config
 
 logger = get_logger(__name__)
 
-router = APIRouter(prefix="/quests", tags=["Quests"], dependencies=[Depends(require_feature("enable_quests"))])
+router = APIRouter(prefix="/quests", tags=["Public - Quests"], dependencies=[Depends(require_feature("enable_quests"))])
 
 @router.get("/")
 def list_quests():

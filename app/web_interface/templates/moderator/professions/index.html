@@ -1,0 +1,13 @@
+{% extends "layout/moderator.html" %}
+
+{% block moderator_content %}
+<h2 class="text-xl font-semibold mb-4">Professions (lecture seule)</h2>
+
+<ul class="space-y-2">
+    {% for prof in professions %}
+        <li class="p-2 bg-yellow-100 rounded">
+            {{ prof.name }}
+        </li>
+    {% endfor %}
+</ul>
+{% endblock %}

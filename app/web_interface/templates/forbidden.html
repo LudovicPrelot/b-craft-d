@@ -1,0 +1,14 @@
+<!-- web_interface/templates/forbidden.html -->
+{% extends "base.html" %}
+{% block title %}Accès interdit{% endblock %}
+
+{% block content %}
+<div class="text-center mt-10">
+    <h1 class="text-3xl font-semibold text-red-600">403 — Accès interdit</h1>
+    <p class="mt-4">Vous n'avez pas la permission d'accéder à cette page.</p>
+
+    <a href="/" class="text-blue-600 underline mt-4 block">
+        Retour à l'accueil
+    </a>
+</div>
+{% endblock %}

@@ -16,7 +16,7 @@ from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from utils.logger import get_logger
-from utils.deps import get_current_user_optional
+from scripts import fix_bugs as fix_bugs
 
 # API Routers
 from routes.api import router as api_router
@@ -116,8 +116,31 @@ logger.info("🌐 Chargement des routes de pages HTML...")
 app.include_router(front_router)
 
 # -------------------------
-# Pages HTML
+# Debug script
 # -------------------------
+
+@app.exception_handler(404)
+async def custom_404_handler(request, exc):
+    """Log toutes les erreurs 404."""
+    logger.debug( f"⚠️  Erreur 404 sur {request.method} {request.url.path}")
+    return templates.TemplateResponse(
+        "errors/404.html",
+        {"request": request},
+        status_code=404
+    )
+
+@app.exception_handler(500)
+async def custom_500_handler(request, exc):
+    """Log toutes les erreurs 500."""
+    logger.debug( f"⚠️  Erreur 500 sur {request.method} {request.url.path}")
+    return templates.TemplateResponse(
+        "errors/500.html",
+        {"request": request, "message": str(exc)},
+        status_code=500
+    )
+
+
+fix_bugs
 
 logger.info("✅ Application FastAPI prête!")
 logger.info(f"📚 Documentation API disponible sur /docs et /redoc")

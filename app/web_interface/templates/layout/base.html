@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>{% block title %}B-CraftD{% endblock %}</title>
+
+    <!-- Tailwind CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- JS global -->
+    <script src="/static/js/utils.js"></script>
+
+    {% block head %}{% endblock %}
+</head>
+
+<body class="bg-gray-100 text-gray-800 min-h-screen flex flex-col">
+
+    <!-- HEADER GLOBAL -->
+    <header class="bg-gray-900 text-white px-6 py-4 flex justify-between items-center shadow">
+        <h1 class="text-xl font-bold">
+            <a href="/">B-CraftD</a>
+        </h1>
+
+        <nav>
+            {% block nav %}{% endblock %}
+        </nav>
+    </header>
+
+    <!-- MAIN CONTENT -->
+    <main class="container mx-auto px-4 py-6 flex-1">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="bg-gray-900 text-gray-300 py-4 text-center text-sm">
+        © {{ year|default(2025) }} — B-CraftD  
+    </footer>
+
+</body>
+</html>

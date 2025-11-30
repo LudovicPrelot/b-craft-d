@@ -1,0 +1,14 @@
+{% extends "layout/admin.html" %}
+{% block content %}
+
+<h1>Modifier {{ profession.id }}</h1>
+
+<form id="form-edit" data-id="{{ profession.id }}">
+    <label>Nom :</label>
+    <input type="text" name="name" value="{{ profession.name }}" required>
+
+    <button type="submit" class="btn btn-success">Enregistrer</button>
+</form>
+
+<script src="/static/js/admin/professions.js"></script>
+{% endblock %}

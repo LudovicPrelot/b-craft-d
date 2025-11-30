@@ -1,0 +1,20 @@
+{% extends "layout/base.html" %}
+
+{% block title %}B-CraftD – Espace Joueur{% endblock %}
+
+{% block nav %}
+<a href="/" class="px-3 hover:underline">Accueil</a>
+<a href="/user/dashboard" class="px-3 hover:underline">Tableau de bord</a>
+<a href="/user/inventory" class="px-3 hover:underline">Inventaire</a>
+<a href="/user/crafting" class="px-3 hover:underline">Crafting</a>
+<a href="/user/me" class="px-3 hover:underline">Mon Profil</a>
+
+<!-- Bouton logout -->
+<form action="/logout" method="post" class="inline">
+    <button class="px-3 text-red-300 hover:text-red-500">Déconnexion</button>
+</form>
+{% endblock %}
+
+{% block content %}
+{% block user_content %}{% endblock %}
+{% endblock %}

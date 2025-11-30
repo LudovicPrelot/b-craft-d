@@ -1,4 +1,4 @@
-# app/routes/api/admin/users.py
+# app/routes/api/admin/loot.py
 
 from fastapi import APIRouter, HTTPException, Depends
 from utils.roles import require_admin
