@@ -1,0 +1,16 @@
+.profession-container {
+    display: grid;
+    gap: 1rem;
+}
+
+.profession-item {
+    padding: 1rem;
+    border-radius: 8px;
+    background: #f6f6f6;
+}
+
+@media (min-width: 768px) {
+    .profession-container {
+        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    }
+}

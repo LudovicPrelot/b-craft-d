@@ -1,12 +1,14 @@
-{% extends "base.html" %}
-{% block title %}Modération — B-CraftD{% endblock %}
+{% extends "layout/moderator.html" %}
+
+{% block title %}Modérateur – Tableau de bord{% endblock %}
 
 {% block content %}
-<h1 class="text-2xl font-semibold mb-4">Espace modérateur</h1>
+<h1>Zone publique</h1>
+<p>Choisissez une section :</p>
 
-<ul class="list-disc ml-6 space-y-2">
-  <li><a href="/moderator/dashboard" class="text-blue-600">Dashboard Modération</a></li>
-  <li><a href="/moderator/users" class="text-blue-600">Gestion limitée des utilisateurs</a></li>
-  <li><a href="/moderator/logs" class="text-blue-600">Logs du système</a></li>
+<ul>
+    <li><a href="/public/professions/">Professions</a></li>
+    <li><a href="/public/recipes/">Recettes</a></li>
+    <li><a href="/public/resources/">Ressources</a></li>
 </ul>
 {% endblock %}

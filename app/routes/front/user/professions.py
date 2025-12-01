@@ -2,18 +2,18 @@
 
 from fastapi import APIRouter, Request, Depends
 from fastapi.responses import HTMLResponse
-from utils.deps_front import front_login_required, get_user_templates
-from utils.client import api_get
-import config
-from fastapi.templating import Jinja2Templates
+from utils.deps import get_current_user_required
+from utils.deps_front import get_templates
 
-router = APIRouter(prefix="/professions")
+router = APIRouter(prefix="/professions", include_in_schema=False)
 
 @router.get("/", response_class=HTMLResponse)
-async def user_professions_page(request: Request, user=Depends(front_login_required), templates = Depends(get_user_templates)):
-    professions = api_get("/api/user/professions/")
-
+async def user_professions_page(
+    request: Request,
+    user=Depends(get_current_user_required),
+    templates = Depends(get_templates)
+):
     return templates.TemplateResponse(
-        "professions/index.html",
-        {"request": request, "user": user, "professions": professions}
+        "user/professions/index.html",
+        {"request": request, "user": user}
     )

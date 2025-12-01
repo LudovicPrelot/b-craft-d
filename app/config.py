@@ -8,6 +8,7 @@ from pathlib import Path
 
 # Racine du projet
 BASE_DIR = Path(__file__).resolve().parent
+API_BASE_URL = os.getenv("API_BASE_URL")
 
 # ---------------------------------------------------------------------------
 # ENVIRONMENT VARIABLES (lecture simple) – valeurs par défaut en dev
@@ -31,6 +32,8 @@ BF_WINDOW_SECONDS = int(os.getenv("BF_WINDOW_SECONDS", 900))      # 15 min
 BF_BLOCK_SECONDS = int(os.getenv("BF_BLOCK_SECONDS", 900))        # 15 min
 
 DEBUG = os.getenv("DEBUG", "true").lower() == "true"
+# Active ou désactive complètement le fallback local vers les handlers API
+ENABLE_LOCAL_FALLBACK = True  # mettre False en prod si on veut forcer le HTTP only
 
 # ---------------------------------------------------------------------------
 # STORAGE FILES & DIRECTORIES
@@ -41,6 +44,8 @@ LOGS_DIR = BASE_DIR / "logs"
 
 TEMPLATES_DIR = WEB_INTERFACE_DIR / "templates"
 STATIC_DIR = WEB_INTERFACE_DIR / "static"
+
+LAYOUT_TEMPLATES_DIR = TEMPLATES_DIR / "layout"
 
 ADMIN_TEMPLATES_DIR = TEMPLATES_DIR / "admin"
 MODERATOR_TEMPLATES_DIR = TEMPLATES_DIR / "moderator"
@@ -65,6 +70,7 @@ LOGS_DIR.mkdir(parents=True, exist_ok=True)
 TEMPLATES_DIR.mkdir(parents=True, exist_ok=True)
 STATIC_DIR.mkdir(parents=True, exist_ok=True)
 
+LAYOUT_TEMPLATES_DIR.mkdir(parents=True, exist_ok=True)
 ADMIN_TEMPLATES_DIR.mkdir(parents=True, exist_ok=True)
 MODERATOR_TEMPLATES_DIR.mkdir(parents=True, exist_ok=True)
 USER_TEMPLATES_DIR.mkdir(parents=True, exist_ok=True)

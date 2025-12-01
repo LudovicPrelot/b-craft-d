@@ -1,8 +1,13 @@
-<!-- web_interface/templates/admin/index.html -->
 {% extends "layout/admin.html" %}
+{% block title %}Admin – Tableau de bord{% endblock %}
+
 {% block content %}
-<h1>Admin Panel</h1>
+<h1>Administration</h1>
+
 <ul>
     <li><a href="/admin/professions/">Professions</a></li>
+    <li><a href="/admin/resources/">Ressources</a></li>
+    <li><a href="/admin/recipes/">Recettes</a></li>
+    <li><a href="/admin/users/">Utilisateurs</a></li>
 </ul>
 {% endblock %}

@@ -1,25 +1,29 @@
 {% extends "layout/base.html" %}
 
-{% block title %}B-CraftD – Administration{% endblock %}
+{% block title %}B-CraftD – Espace Admin{% endblock %}
+
+{% block head %}
+  <link rel="stylesheet" href="/static/css/admin.css">
+  {% block stylesheets_custom %}{% endblock %}
+{% endblock %}
 
 {% block nav %}
 <a href="/" class="px-3 hover:underline">Accueil</a>
-<a href="/admin" class="px-3 hover:underline">Dashboard Admin</a>
-
-<a href="/admin/users" class="px-3 hover:underline">Utilisateurs</a>
+<a href="/admin" class="px-3 hover:underline">Tableau de bord admin</a>
 <a href="/admin/professions" class="px-3 hover:underline">Professions</a>
 <a href="/admin/resources" class="px-3 hover:underline">Ressources</a>
 <a href="/admin/recipes" class="px-3 hover:underline">Recettes</a>
-<a href="/admin/loot" class="px-3 hover:underline">Loot Tables</a>
-<a href="/admin/settings" class="px-3 hover:underline">Paramètres</a>
-<a href="/admin/stats" class="px-3 hover:underline">Stats</a>
+<a href="/admin/users" class="px-3 hover:underline">Utilisateurs</a>
 
-<!-- Logout -->
+<!-- Bouton logout -->
 <form action="/logout" method="post" class="inline">
     <button class="px-3 text-red-300 hover:text-red-500">Déconnexion</button>
 </form>
 {% endblock %}
 
-{% block content %}
-{% block admin_content %}{% endblock %}
+{% block content %}{% endblock %}
+
+{% block scripts %}
+  <script></script>
+  {% block scripts_custom %}{% endblock %}
 {% endblock %}

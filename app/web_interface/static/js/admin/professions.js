@@ -1,117 +1,43 @@
-// ========================================
-// JS – CRUD complet pour professions
-// ========================================
-
-const API_BASE = "/api/admin/professions";
-
-// --------------------------------------------------------
-// LIST
-// --------------------------------------------------------
 async function loadProfessions() {
-    const res = await fetch(API_BASE + "/");
-    const data = await res.json();
+    const container = document.getElementById("professions-list");
 
-    const tbody = document.querySelector("#prof-table-body");
-    if (!tbody) return;
+    const data = await httpGetJson("/api/admin/professions");
 
-    tbody.innerHTML = "";
-
-    data.forEach(prof => {
-        tbody.innerHTML += `
-            <tr>
-                <td>${prof.id}</td>
-                <td>${prof.name}</td>
-
-                <td>
-                    <a class="btn btn-sm btn-info" href="/admin/professions/${prof.id}">Voir</a>
-                    <a class="btn btn-sm btn-warning" href="/admin/professions/${prof.id}/edit">Modifier</a>
-                    <button class="btn btn-sm btn-danger"
-                            onclick="deleteProfession('${prof.id}')">
-                        Supprimer
-                    </button>
-                </td>
-            </tr>
-        `;
-    });
+    container.innerHTML = Object.entries(data.professions).map(([key, p]) =>
+        `<div class="profession-item">
+            <h3>${p.name}</h3>
+            <p>${p.description || ""}</p>
+            <button onclick="editProfession('${p.id}')">Modifier</button>
+            <button onclick="deleteProfession('${p.id}')">Supprimer</button>
+        </div>
+    `).join("");
 }
 
-// --------------------------------------------------------
-// CREATE
-// --------------------------------------------------------
-async function createProfession(ev) {
-    ev.preventDefault();
-
-    const form = ev.target;
-    const payload = {
-        id: form.id.value,
-        name: form.name.value
-    };
-
-    const res = await fetch(API_BASE + "/", {
-        method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify(payload)
-    });
-
-    if (res.ok) {
-        window.location.href = "/admin/professions";
-    } else {
-        alert("Erreur lors de la création.");
-    }
-}
-
-// --------------------------------------------------------
-// UPDATE
-// --------------------------------------------------------
-async function updateProfession(ev) {
-    ev.preventDefault();
-
-    const form = ev.target;
-    const profId = form.dataset.id;
-
-    const payload = {
-        name: form.name.value
-    };
-
-    const res = await fetch(API_BASE + "/" + profId, {
-        method: "PUT",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify(payload)
-    });
-
-    if (res.ok) {
-        window.location.href = "/admin/professions";
-    } else {
-        alert("Erreur lors de la mise à jour.");
-    }
-}
-
-// --------------------------------------------------------
-// DELETE
-// --------------------------------------------------------
 async function deleteProfession(id) {
-    if (!confirm("Supprimer " + id + " ?")) return;
-
-    const res = await fetch(API_BASE + "/" + id, {
-        method: "DELETE"
-    });
-
-    if (res.ok) {
-        window.location.reload();
-    } else {
-        alert("Erreur lors de la suppression.");
-    }
+    await httpDeleteJson(`/api/admin/professions/${id}`);
+    loadProfessions();
 }
 
-// --------------------------------------------------------
-// Chargement automatique si table présente
-// --------------------------------------------------------
-document.addEventListener("DOMContentLoaded", () => {
-    if (document.querySelector("#prof-table-body")) loadProfessions();
+function editProfession(id) {
+    const form = document.getElementById("profession-form");
+    form.innerHTML = `
+        <h3>Modifier ${id}</h3>
+        <input id="prof-name" placeholder="Nom">
+        <textarea id="prof-desc" placeholder="Description"></textarea>
+        <button onclick="saveProfession('${id}')">Enregistrer</button>
+    `;
+}
 
-    const formCreate = document.querySelector("#form-create");
-    if (formCreate) formCreate.addEventListener("submit", createProfession);
+async function saveProfession(id) {
+    const name = document.getElementById("prof-name").value;
+    const desc = document.getElementById("prof-desc").value;
 
-    const formEdit = document.querySelector("#form-edit");
-    if (formEdit) formEdit.addEventListener("submit", updateProfession);
-});
+    await httpPutJson(`/api/admin/professions/${id}`, {
+        name,
+        description: desc,
+    });
+
+    loadProfessions();
+}
+
+document.addEventListener("DOMContentLoaded", loadProfessions);

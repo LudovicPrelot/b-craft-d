@@ -1,19 +1,18 @@
 # app/routes/api/user/crafting.py
 
 from fastapi import APIRouter, Depends, HTTPException
-from utils.roles import require_player
+from utils.roles import require_user
 from utils.json import load_users, save_users
 from utils.logger import get_logger
-import config
 from models.user import User
 from services.crafting_service import possible_recipes_for_user, apply_craft
 
 logger = get_logger(__name__)
 
-router = APIRouter(prefix="/crafting", tags=["Users - Crafting"], dependencies=[Depends(require_player)])
+router = APIRouter(prefix="/crafting", tags=["Users - Crafting"], dependencies=[Depends(require_user)])
 
 @router.get("/possible")
-def list_possible(current=Depends(require_player)):
+def list_possible(current=Depends(require_user)):
     user = User.from_dict(current)
     logger.info(f"🔍 Récupération des recettes possibles pour user_id={user.id}")
     
@@ -26,7 +25,7 @@ def list_possible(current=Depends(require_player)):
         raise HTTPException(500, "Failed to retrieve possible recipes")
 
 @router.post("/craft")
-def craft(payload: dict, current=Depends(require_player)):
+def craft(payload: dict, current=Depends(require_user)):
     recipe_id = payload.get("recipe_id")
     
     if not recipe_id:

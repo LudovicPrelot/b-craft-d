@@ -1,17 +1,17 @@
 # app/routes/api/user/devices.py
 
 from fastapi import APIRouter, Depends, HTTPException
-from utils.roles import require_player
+from utils.roles import require_user
 from utils.json import load_json, save_json
 from utils.logger import get_logger
 import config
 
 logger = get_logger(__name__)
 
-router = APIRouter(prefix="/devices", tags=["Users - Devices"], dependencies=[Depends(require_player)])
+router = APIRouter(prefix="/devices", tags=["Users - Devices"], dependencies=[Depends(require_user)])
 
 @router.get("/")
-def list_devices(user=Depends(require_player)):
+def list_devices(user=Depends(require_user)):
     uid = user["id"]
     logger.info(f"📱 Liste des devices pour user_id={uid}")
     
@@ -25,7 +25,7 @@ def list_devices(user=Depends(require_player)):
         raise HTTPException(500, "Failed to retrieve devices")
 
 @router.post("/add")
-def add_device(device_id: str, user=Depends(require_player)):
+def add_device(device_id: str, user=Depends(require_user)):
     uid = user["id"]
     logger.info(f"➕ Ajout du device {device_id} pour user_id={uid}")
     

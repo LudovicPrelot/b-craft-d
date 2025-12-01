@@ -1,29 +1,19 @@
 # app/routes/front/admin/professions.py
 
-from fastapi import APIRouter, Request, Depends, Form
-from fastapi.responses import HTMLResponse, RedirectResponse
-from utils.deps_front import front_admin_required, get_admin_templates
-from utils.client import api_get, api_post, api_delete
-import config
-from fastapi.templating import Jinja2Templates
+from fastapi import APIRouter, Request, Depends
+from fastapi.responses import HTMLResponse
+from utils.deps import get_current_admin_required
+from utils.deps_front import get_templates
 
-router = APIRouter(prefix="/professions")
+router = APIRouter(prefix="/professions", include_in_schema=False)
 
 @router.get("/", response_class=HTMLResponse)
-async def admin_professions_page(request: Request, user=Depends(front_admin_required), templates = Depends(get_admin_templates)):
-    professions = api_get("/api/public/professions")
-
+async def admin_professions_page(
+    request: Request,
+    user=Depends(get_current_admin_required),
+    templates = Depends(get_templates)
+):
     return templates.TemplateResponse(
-        "professions/index.html",
-        {"request": request, "user": user, "professions": professions}
+        "admin/professions/index.html",
+        {"request": request, "user": user}
     )
-
-@router.post("/create")
-async def admin_professions_create(name: str = Form(...), user=Depends(front_admin_required)):
-    api_post("/api/admin/professions/", {"name": name})
-    return RedirectResponse("/admin/professions", status_code=303)
-
-@router.post("/admin/professions/{pid}/delete")
-async def admin_professions_delete(pid: str, user=Depends(front_admin_required)):
-    api_delete(f"/api/admin/professions/{pid}")
-    return RedirectResponse("/admin/professions", status_code=303)

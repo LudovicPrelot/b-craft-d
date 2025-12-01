@@ -1,18 +1,17 @@
 {% extends "layout/base.html" %}
 
-{% block title %}B-CraftD – Public{% endblock %}
+{% block title %}B-CraftD – Public Wiki{% endblock %}
+
+{% block head %}
+  <link rel="stylesheet" href="/static/css/public.css">
+  {% block stylesheets_custom %}{% endblock %}
+{% endblock %}
 
 {% block nav %}
 <a href="/" class="px-3 hover:underline">Accueil</a>
-<a href="/login" class="px-3 hover:underline">Connexion</a>
-<a href="/register" class="px-3 hover:underline">Inscription</a>
-
-<!-- Référentiel public -->
-<a href="/public/resources" class="px-3 hover:underline">Ressources</a>
-<a href="/public/professions" class="px-3 hover:underline">Professions</a>
-<a href="/public/recipes" class="px-3 hover:underline">Recettes</a>
 {% endblock %}
 
-{% block content %}
-{% block public_content %}{% endblock %}
+{% block scripts %}
+  <script></script>
+  {% block scripts_custom %}{% endblock %}
 {% endblock %}

@@ -1,6 +1,11 @@
 {% extends "layout/base.html" %}
 
-{% block title %}B-CraftD – Modération{% endblock %}
+{% block title %}B-CraftD – Espace Modération{% endblock %}
+
+{% block head %}
+  <link rel="stylesheet" href="/static/css/moderator.css">
+  {% block stylesheets_custom %}{% endblock %}
+{% endblock %}
 
 {% block nav %}
 <a href="/" class="px-3 hover:underline">Accueil</a>
@@ -13,6 +18,9 @@
 </form>
 {% endblock %}
 
-{% block content %}
-{% block moderator_content %}{% endblock %}
+{% block content %}{% endblock %}
+
+{% block scripts %}
+  <script></script>
+  {% block scripts_custom %}{% endblock %}
 {% endblock %}

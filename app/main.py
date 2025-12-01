@@ -9,7 +9,7 @@ Point d'entrée FastAPI principal.
 """
 
 from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.exceptions import RequestValidationError
@@ -93,6 +93,28 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 # -------------------------
 # Middleware de logging des requêtes
 # -------------------------
+
+@app.middleware("http")
+async def front_security_middleware(request: Request, call_next):
+    try:
+        response = await call_next(request)
+
+        if response.status_code == 401:
+            return RedirectResponse("/public/login")
+        if response.status_code == 403:
+            return templates.TemplateResponse("errors/forbidden.html", {"request": request})
+        if response.status_code == 404:
+            return templates.TemplateResponse("errors/404.html", {"request": request})
+        if response.status_code == 500:
+            return templates.TemplateResponse("errors/500.html", {"request": request})
+
+        return response
+
+    except PermissionError:
+        return RedirectResponse("/public/login")
+    except Exception:
+        return templates.TemplateResponse("errors/500.html", {"request": request})
+
 @app.middleware("http")
 async def log_requests(request: Request, call_next):
     """Log toutes les requêtes HTTP entrantes."""
@@ -139,8 +161,6 @@ async def custom_500_handler(request, exc):
         status_code=500
     )
 
-
-fix_bugs
 
 logger.info("✅ Application FastAPI prête!")
 logger.info(f"📚 Documentation API disponible sur /docs et /redoc")

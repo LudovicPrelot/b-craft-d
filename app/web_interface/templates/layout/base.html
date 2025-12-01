@@ -5,11 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
 
     <title>{% block title %}B-CraftD{% endblock %}</title>
+    <!-- Basic CSS -->
+    <link rel="stylesheet" href="/static/css/base.css">
 
     <!-- Tailwind CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
 
     <!-- JS global -->
+    <script src="/static/js/http.js"></script>
     <script src="/static/js/utils.js"></script>
 
     {% block head %}{% endblock %}
@@ -37,6 +40,8 @@
     <footer class="bg-gray-900 text-gray-300 py-4 text-center text-sm">
         © {{ year|default(2025) }} — B-CraftD  
     </footer>
+
+    {% block scripts %}{% endblock %}
 
 </body>
 </html>

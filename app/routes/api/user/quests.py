@@ -3,17 +3,17 @@ from fastapi import APIRouter, Depends, HTTPException
 from utils.json import load_json, save_json
 from utils.logger import get_logger
 from utils.feature_flags import require_feature
-from utils.roles import require_player
+from utils.roles import require_user
 from services.xp_service import add_xp
 from models.user import User
 import config
 
 logger = get_logger(__name__)
 
-router = APIRouter(prefix="/quests", tags=["Users - Quests"], dependencies=[Depends(require_feature("enable_quests")), Depends(require_player)])
+router = APIRouter(prefix="/quests", tags=["Users - Quests"], dependencies=[Depends(require_feature("enable_quests")), Depends(require_user)])
 
 @router.post("/complete/{quest_id}")
-def complete_quest(quest_id: str, current=Depends(require_player)):
+def complete_quest(quest_id: str, current=Depends(require_user)):
     user = User.from_dict(current)
     logger.info(f"🎯 Tentative de complétion de la quête '{quest_id}' par user_id={user.id}")
     

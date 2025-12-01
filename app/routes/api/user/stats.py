@@ -1,7 +1,7 @@
 # app/routes/api/user/stats.py
 
 from fastapi import APIRouter, Depends, HTTPException
-from utils.roles import require_player
+from utils.roles import require_user
 from utils.feature_flags import require_feature
 from utils.logger import get_logger
 from services.xp_service import add_xp, xp_for_level
@@ -11,11 +11,11 @@ import config
 
 logger = get_logger(__name__)
 
-router = APIRouter(prefix="/stats", tags=["Users - Stats"], dependencies=[Depends(require_feature("enable_stats")), Depends(require_player)]
+router = APIRouter(prefix="/stats", tags=["Users - Stats"], dependencies=[Depends(require_feature("enable_stats")), Depends(require_user)]
 )
 
 @router.get("/")
-def get_stats(current=Depends(require_player)):
+def get_stats(current=Depends(require_user)):
     logger.info(f"📊 Récupération des stats pour user_id={current.get('id')}")
     
     try:
@@ -36,7 +36,7 @@ def get_stats(current=Depends(require_player)):
         raise HTTPException(500, "Failed to retrieve stats")
 
 @router.post("/add_xp")
-def add_xp_to_user(amount: int, current=Depends(require_player)):
+def add_xp_to_user(amount: int, current=Depends(require_user)):
     logger.info(f"⭐ Ajout de {amount} XP pour user_id={current.get('id')}")
     
     try:

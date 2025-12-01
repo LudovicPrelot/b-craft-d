@@ -1,15 +1,16 @@
-<!-- web_interface/templates/public/index.html -->
-{% extends "base.html" %}
-{% block title %}Zone publique — B-CraftD{% endblock %}
+{% extends "layout/public.html" %}
+
+{% block title %}Section publique{% endblock %}
 
 {% block content %}
-<h1 class="text-2xl font-semibold mb-4">Pages publiques</h1>
+<h1>Zone publique</h1>
+<p>Choisissez une section :</p>
 
-<ul class="list-disc ml-6 space-y-2">
-  <li><a href="/public/login" class="text-blue-600">Connexion</a></li>
-  <li><a href="/public/register" class="text-blue-600">Inscription</a></li>
-  <li><a href="/public/professions" class="text-blue-600">Professions</a></li>
-  <li><a href="/public/resources" class="text-blue-600">Ressources</a></li>
-  <li><a href="/public/recipes" class="text-blue-600">Recettes</a></li>
+<ul>
+    <li><a href="/public/professions/">Professions</a></li>
+    <li><a href="/public/recipes/">Recettes</a></li>
+    <li><a href="/public/resources/">Ressources</a></li>
 </ul>
 {% endblock %}
+
+{% block scripts_custom %}{% endblock %}

@@ -1,7 +1,7 @@
 # app/routes/api/user/loot.py
 
 from fastapi import APIRouter, Depends, Query, HTTPException
-from utils.roles import require_player
+from utils.roles import require_user
 from utils.json import load_json, save_json
 from utils.feature_flags import require_feature
 from utils.logger import get_logger
@@ -58,7 +58,7 @@ STAT_MULTIPLIERS = {
 # -------------------------------------------------------
 
 @router.post("/collect")
-def collect(current=Depends(require_player), attempts: int = Query(1, ge=1, le=10), season: str = Query("summer"), weather: str = Query("sunny"), event: str = Query(None)):
+def collect(current=Depends(require_user), attempts: int = Query(1, ge=1, le=10), season: str = Query("summer"), weather: str = Query("sunny"), event: str = Query(None)):
     """
     Loot system with:
     - Biomes
