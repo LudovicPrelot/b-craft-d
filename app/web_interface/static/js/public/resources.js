@@ -1,9 +1,27 @@
-// web_interface/static/js/public/resources.js
-async function loadResources(){
-  try{
-    const data = await httpGetJson('/api/public/resources/');
-    const el = document.getElementById('resources-list');
-    if (!data || !data.length) { el.innerText = 'Aucune ressource'; return; }
-    el.innerHTML = '<ul class="space-y-2">'+data.map(r=>`<li class="p-2 border rounded">${r.name||r.id} — <small>${r.type||''}</small></li>`).join('')+'</ul>';
-  }catch(e){ console.error(e); document.getElementById('resources-list').innerText='Erreur'; }
-}
+// static/js/public/resources.js
+
+document.addEventListener("DOMContentLoaded", async () => {
+    const container = document.getElementById("resources-container");
+
+    try {
+        const response = await fetch("/api/public/resources/");
+        const data = await response.json();
+
+        container.innerHTML = "";
+
+        Object.entries(data).map(([key, resource]) => {
+            const div = document.createElement("div");
+            div.className = "resource-card";
+            div.innerHTML = `
+                <h3>${resource.name || key}</h3>
+                <p><strong>ID:</strong> ${key}</p>
+                <p><strong>Rareté:</strong> ${resource.rarity || "?"}</p>
+            `;
+            container.appendChild(div);
+        });
+
+    } catch (err) {
+        container.innerHTML = "<p class='error'>Impossible de charger les ressources.</p>";
+        console.error(err);
+    }
+});

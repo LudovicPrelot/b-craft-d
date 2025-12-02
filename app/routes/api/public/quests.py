@@ -1,21 +1,54 @@
 # app/routes/api/public/quests.py
-from fastapi import APIRouter, Depends, HTTPException
-from utils.json import load_json
+"""
+Routes publiques pour les quêtes - VERSION POSTGRESQL
+"""
+
+from fastapi import APIRouter, Depends
+from sqlalchemy.orm import Session
+from typing import List
+
 from utils.logger import get_logger
 from utils.feature_flags import require_feature
-import config
+from utils.db_crud import quest_crud
+from database.connection import get_db
 
 logger = get_logger(__name__)
 
-router = APIRouter(prefix="/quests", tags=["Public - Quests"], dependencies=[Depends(require_feature("enable_quests"))])
+router = APIRouter(
+    prefix="/quests", 
+    tags=["Public - Quests"],
+    dependencies=[Depends(require_feature("enable_quests"))]
+)
+
 
 @router.get("/")
-def list_quests():
-    logger.info("📜 Liste des quêtes disponibles")
+def list_quests(
+    skip: int = 0,
+    limit: int = 100,
+    db: Session = Depends(get_db)
+):
+    """Liste toutes les quêtes disponibles."""
+    logger.info(f"📜 Public: Liste des quêtes")
+    
     try:
-        quests = load_json(config.QUESTS_FILE)
-        logger.debug(f"   → {len(quests)} quête(s) disponible(s)")
-        return quests
+        quests = quest_crud.get_multi(db, skip=skip, limit=limit)
+        result = [q.to_dict() for q in quests]
+        
+        logger.debug(f"   → {len(result)} quête(s)")
+        return result
+        
     except Exception as e:
-        logger.error("❌ Erreur lors de la récupération des quêtes", exc_info=True)
-        raise HTTPException(500, "Failed to retrieve quests")
+        logger.error("❌ Erreur récupération quêtes", exc_info=True)
+        raise
+
+
+@router.get("/{quest_id}")
+def get_quest(
+    quest_id: str,
+    db: Session = Depends(get_db)
+):
+    """Récupère une quête spécifique."""
+    logger.info(f"🔍 Public: Récupération quête '{quest_id}'")
+    
+    quest = quest_crud.get_or_404(db, quest_id, "Quest")
+    return quest.to_dict()
