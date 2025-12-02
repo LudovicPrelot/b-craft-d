@@ -217,7 +217,7 @@ def test_concurrent_users_crafting(client, db_session, sample_profession, sample
     """
     Test que plusieurs users peuvent crafter en même temps sans conflit.
     """
-    from database.models import User
+    from models import User
     from utils.auth import hash_password
     
     # Créer 3 users
@@ -277,7 +277,7 @@ def test_concurrent_users_crafting(client, db_session, sample_profession, sample
 @pytest.mark.integration
 def test_craft_with_insufficient_level(client, user_token, db_session):
     """Test qu'un user ne peut pas crafter une recette trop avancée."""
-    from database.models import Recipe, Resource
+    from models import Recipe, Resource
     
     # Créer une recette niveau 10
     resource = Resource(id="diamond", name="Diamant", type="mineral")

@@ -56,7 +56,7 @@ def read_setting(
     Récupère un paramètre spécifique.
     
     Args:
-        key: Clé du paramètre (ex: "enable_loot")
+        key: Clé du paramètre (ex: "enable_quest")
     """
     logger.info(f"⚙️  Admin: Lecture paramètre '{key}'")
     

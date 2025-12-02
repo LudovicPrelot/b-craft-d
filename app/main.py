@@ -11,8 +11,10 @@ from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from contextlib import asynccontextmanager
 
-from utils.auth import cleanup_expired_tokens
 from utils.logger import get_logger
+from utils.auth import cleanup_expired_tokens
+from utils.settings import init_default_settings
+from utils.feature_flags import init_feature_flags
 from database.connection import SessionLocal, init_db, check_db_connection
 
 # API Routers
@@ -48,19 +50,22 @@ async def lifespan(app: FastAPI):
     # Initialise les tables
     init_db()
     
-    # Nettoie les tokens expirés au démarrage
+    
     try:
         db = SessionLocal()
-        deleted = cleanup_expired_tokens(db)
+        deleted = cleanup_expired_tokens(db) # Nettoie les tokens expirés au démarrage
         if deleted > 0:
             logger.info(f"🧹 {deleted} refresh token(s) expiré(s) nettoyé(s)")
+        
+        init_feature_flags(db)  # Crée les feature flags par défaut
+        init_default_settings(db)  # Crée les settings par défaut
         db.close()
+
+        yield
     except Exception as e:
         logger.warning(f"⚠️  Erreur lors du nettoyage des tokens: {e}")
     
     logger.info("✅ Application prête!")
-    
-    yield  # L'application tourne ici
     
     # SHUTDOWN
     logger.info("👋 Arrêt de l'application...")
