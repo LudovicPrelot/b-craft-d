@@ -1,4 +1,4 @@
-# app/database/models/quest.py
+# app/models/quest.py
 """
 Modèles SQLAlchemy pour Quest.
 """

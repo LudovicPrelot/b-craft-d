@@ -12,7 +12,7 @@ from fastapi.testclient import TestClient
 import os
 
 from database.connection import Base
-from database.models import User, Profession, Resource, Recipe, RefreshToken
+from models import User, Profession, Resource, Recipe
 from main import app
 from utils.auth import hash_password
 from utils.db_crud import user_crud, profession_crud, resource_crud, recipe_crud

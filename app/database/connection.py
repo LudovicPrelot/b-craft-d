@@ -3,7 +3,7 @@
 Connexion PostgreSQL avec SQLAlchemy.
 """
 
-from sqlalchemy import create_engine, event
+from sqlalchemy import create_engine, event, text
 from sqlalchemy.orm import sessionmaker, declarative_base, Session
 from sqlalchemy.pool import NullPool
 from contextlib import contextmanager
@@ -121,7 +121,6 @@ def init_db():
         Profession, 
         Resource, 
         Recipe, 
-        LootTable, 
         Quest, 
         Setting
     )
@@ -140,7 +139,7 @@ def check_db_connection() -> bool:
     """Vérifie que la DB est accessible."""
     try:
         with engine.connect() as conn:
-            conn.execute("SELECT 1")
+            conn.execute(text("SELECT 1"))
         return True
     except Exception as e:
         logger.error(f"❌ Database connection failed: {e}")

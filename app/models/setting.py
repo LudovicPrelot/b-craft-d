@@ -1,4 +1,4 @@
-# app/database/models/setting.py
+# app/models/setting.py
 """
 Modèles SQLAlchemy pour Setting.
 """

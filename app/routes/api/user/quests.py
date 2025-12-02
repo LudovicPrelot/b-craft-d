@@ -15,7 +15,7 @@ from services.xp_service import add_xp
 
 logger_user = get_logger(__name__)
 
-router_user = APIRouter(
+router = APIRouter(
     prefix="/quests", 
     tags=["Users - Quests"],
     dependencies=[
@@ -25,7 +25,7 @@ router_user = APIRouter(
 )
 
 
-@router_user.post("/complete/{quest_id}")
+@router.post("/complete/{quest_id}")
 def complete_quest(
     quest_id: str,
     current=Depends(require_user),

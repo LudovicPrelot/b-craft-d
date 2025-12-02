@@ -2,6 +2,13 @@
 
 from typing import Dict, Tuple
 from models.user import User
+from sqlalchemy.orm import Session
+from utils.logger import get_logger
+from utils.feature_flags import check_feature_enabled
+from utils.db_crud import user_crud
+
+logger = get_logger(__name__)
+
 
 # formule simple d'XP pour niveau : next_level_xp = base * level^exponent
 BASE_XP = 100
@@ -42,3 +49,13 @@ def _apply_level_rewards(user: User):
     # give +1 stat to the lowest stat
     min_stat = min(user.stats, key=lambda k: user.stats[k])
     user.stats[min_stat] += 1
+
+def award_quest_xp(db: Session, user_id: str, amount: int):
+    # Vérification sans lever d'exception
+    if not check_feature_enabled(db, "stats", raise_error=False):
+        logger.info("Stats désactivées, skip XP")
+        return
+    
+    # Code métier
+    user = user_crud.get(db, user_id)
+    add_xp(user, amount)

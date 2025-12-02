@@ -1,7 +1,6 @@
 # app/utils/db_crud.py
 """
 CRUD générique pour PostgreSQL avec SQLAlchemy.
-Remplace utils/crud.py (JSON).
 """
 
 from typing import TypeVar, Generic, Type, List, Optional, Dict, Any
@@ -91,7 +90,6 @@ class CRUDBase(Generic[ModelType]):
             db.rollback()
             logger.warning(f"⚠️  Integrity error creating {self.model.__name__}: {e}")
             
-            # Détecte le type d'erreur
             if "unique" in str(e).lower():
                 raise HTTPException(400, "Item with this ID already exists")
             raise HTTPException(400, f"Database constraint violation: {e}")
@@ -166,14 +164,13 @@ class CRUDBase(Generic[ModelType]):
 # INSTANCES PRÊTES À L'EMPLOI
 # ============================================================================
 
-from models import User, Profession, Resource, Recipe, RefreshToken, LootTable, Quest, Setting
+from models import User, Profession, Resource, Recipe, RefreshToken, Quest, Setting
 
 user_crud = CRUDBase[User](User)
 profession_crud = CRUDBase[Profession](Profession)
 resource_crud = CRUDBase[Resource](Resource)
 recipe_crud = CRUDBase[Recipe](Recipe)
 refresh_token_crud = CRUDBase[RefreshToken](RefreshToken)
-loot_table_crud = CRUDBase[LootTable](LootTable)
 quest_crud = CRUDBase[Quest](Quest)
 setting_crud = CRUDBase[Setting](Setting)
 
