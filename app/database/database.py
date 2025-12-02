@@ -1,7 +1,7 @@
 from utils.json import load_json, save_json
-from models.resources import Resource
-from models.recipes import Recipe
-from models.professions import Profession
+from app.models.resource import Resource
+from app.models.recipe import Recipe
+from app.models.profession import Profession
 from config import RESOURCES_FILE, RECIPES_FILE, PROFESSIONS_FILE 
 from utils.logger import get_logger
 

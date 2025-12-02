@@ -1,0 +1,146 @@
+{
+  "mineur": {
+    "id": "mineur",
+    "name": "Mineur",
+    "resources_found": [
+      "argile",
+      "calcaire",
+      "charbon",
+      "fer",
+      "cuivre",
+      "or",
+      "argent",
+      "pierre"
+    ],
+    "allowed_recipes": ["ciment"],
+    "subclasses": ["foreur", "géologue", "prospecteur"]
+  },
+
+  "bûcheron": {
+    "id": "bûcheron",
+    "name": "Bûcheron",
+    "resources_found": ["bois"],
+    "allowed_recipes": ["planche_bois"],
+    "subclasses": ["forestier", "menuisier", "ébéniste"]
+  },
+
+  "chasseur": {
+    "id": "chasseur",
+    "name": "Chasseur",
+    "resources_found": [],
+    "allowed_recipes": [],
+    "subclasses": ["trappeur", "tanneur", "pisteur"]
+  },
+
+  "fermier": {
+    "id": "fermier",
+    "name": "Fermier",
+    "resources_found": [
+      "blé",
+      "maïs",
+      "riz",
+      "pommes_de_terre",
+      "avoine",
+      "orge",
+      "raisins"
+    ],
+    "allowed_recipes": [],
+    "subclasses": ["cultivateur", "éleveur", "apiculteur"]
+  },
+
+  "forgeron": {
+    "id": "forgeron",
+    "name": "Forgeron",
+    "resources_found": [],
+    "allowed_recipes": ["acier"],
+    "subclasses": ["métallurgiste", "armurier", "ferronnier"]
+  },
+
+  "maçon": {
+    "id": "maçon",
+    "name": "Maçon",
+    "resources_found": ["pierre", "sable", "gravier"],
+    "allowed_recipes": ["béton"],
+    "subclasses": ["cimentier", "tailleur_de_pierre"]
+  },
+
+  "artisan_verre": {
+    "id": "artisan_verre",
+    "name": "Artisan verrier",
+    "resources_found": ["sable"],
+    "allowed_recipes": ["verre"],
+    "subclasses": ["souffleur_de_verre"]
+  },
+
+  "artisan_textile": {
+    "id": "artisan_textile",
+    "name": "Artisan textile",
+    "resources_found": ["lin", "coton", "laine", "soie"],
+    "allowed_recipes": ["papier"],
+    "subclasses": ["fileur", "tisserand", "teinturier"]
+  },
+
+  "brasseur": {
+    "id": "brasseur",
+    "name": "Brasseur",
+    "resources_found": ["orge", "eau"],
+    "allowed_recipes": ["bière"],
+    "subclasses": ["maître_brasseur"]
+  },
+
+  "vigneron": {
+    "id": "vigneron",
+    "name": "Vigneron",
+    "resources_found": ["raisins"],
+    "allowed_recipes": ["vin", "jus_raisin"],
+    "subclasses": ["œnologue"]
+  },
+
+  "distillateur": {
+    "id": "distillateur",
+    "name": "Distillateur",
+    "resources_found": ["orge", "eau"],
+    "allowed_recipes": ["whisky"],
+    "subclasses": ["chimiste", "alchimiste"]
+  },
+
+  "ingenieur_hydraulique": {
+    "id": "ingenieur_hydraulique",
+    "name": "Ingénieur hydraulique",
+    "resources_found": ["eau"],
+    "allowed_recipes": [],
+    "subclasses": ["architecte_naval", "technicien_barrage"]
+  },
+
+  "maitre_artisan": {
+    "id": "maitre_artisan",
+    "name": "Maître Artisan",
+    "resources_found": [],
+    "allowed_recipes": ["objet_luxe"],
+    "subclasses": ["orfèvre_master", "maitre_ebeniste"]
+  },
+
+  "meunier": {
+    "id": "meunier",
+    "name": "Meunier",
+    "resources_found": [],
+    "allowed_recipes": ["farine"],
+    "subclasses": ["maître_meunier"]
+  },
+
+  "fileur": {
+    "id": "fileur",
+    "name": "Fileur",
+    "resources_found": ["lin", "coton", "laine"],
+    "allowed_recipes": ["fil_lin"],
+    "subclasses": []
+  },
+
+  "tisserand": {
+    "id": "tisserand",
+    "name": "Tisserand",
+    "resources_found": [],
+    "allowed_recipes": ["tissu_lin"],
+    "subclasses": ["maître_tisserand"]
+  }
+}

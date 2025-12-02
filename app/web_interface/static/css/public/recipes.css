@@ -1,12 +1,12 @@
-/* static/css/public/professions.css */
+/* static/css/public/recipes.css */
 
-.professions-grid {
+.recipes-grid {
     display: grid;
     gap: 1rem;
     grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
 }
 
-.profession-card {
+.recipe-card {
     border: 1px solid #ccc;
     padding: 1rem;
     border-radius: 8px;
@@ -14,7 +14,7 @@
     transition: 0.2s;
 }
 
-.profession-card:hover {
+.recipe-card:hover {
     background: #fff;
     box-shadow: 0 0 6px rgba(0,0,0,0.15);
 }

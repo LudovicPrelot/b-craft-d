@@ -1,6 +1,6 @@
 from typing import Dict, List, Optional
 import json
-from models.resources import Resource
+from app.models.resource import Resource
 import config
 
 class ResourceService:

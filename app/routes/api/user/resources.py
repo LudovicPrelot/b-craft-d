@@ -1,21 +1,53 @@
 # app/routes/api/user/resources.py
+"""
+Routes user pour les ressources.
+"""
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
+from sqlalchemy.orm import Session
+from typing import List
+
 from utils.roles import require_user
 from utils.logger import get_logger
-from utils.crud import list_all, get_one
-import config
+from utils.db_crud import resource_crud
+from database.connection import get_db
+from schemas.resource import ResourceResponse
 
 logger = get_logger(__name__)
 
 router = APIRouter(prefix="/resources", tags=["Users - Resources"], dependencies=[Depends(require_user)])
 
-@router.get("/")
-def list_resources(current=Depends(require_user)):
-    user_id = current.get("id")
-    return list_all(config.RESOURCES_FILE, "resources", logger, user_id=user_id)
 
-@router.get("/{resource_id}")
-def get_resource(resource_id: str, current=Depends(require_user)):
+@router.get("/", response_model=List[ResourceResponse])
+def list_resources(
+    type: str = Query(None),
+    current=Depends(require_user),
+    db: Session = Depends(get_db)
+):
+    """Liste toutes les ressources."""
     user_id = current.get("id")
-    return get_one(config.RESOURCES_FILE, resource_id, "resource", logger, user_id=user_id)
+    logger.info(f"📋 User {user_id}: Liste des ressources (type={type})")
+    
+    filters = {}
+    if type:
+        filters["type"] = type
+    
+    resources = resource_crud.get_multi(db, limit=500, filters=filters)
+    
+    logger.debug(f"   → {len(resources)} ressource(s)")
+    return resources
+
+
+@router.get("/{resource_id}", response_model=ResourceResponse)
+def get_resource(
+    resource_id: str,
+    current=Depends(require_user),
+    db: Session = Depends(get_db)
+):
+    """Récupère une ressource."""
+    user_id = current.get("id")
+    logger.info(f"🔍 User {user_id}: Récupération ressource '{resource_id}'")
+    
+    resource = resource_crud.get_or_404(db, resource_id, "Resource")
+    
+    return resource

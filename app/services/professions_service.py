@@ -1,7 +1,7 @@
 from typing import Dict, List, Optional
 from pathlib import Path
 import json
-from models.professions import Profession
+from app.models.profession import Profession
 import config
 
 class ProfessionService:

@@ -1,0 +1,101 @@
+{
+    "ciment": {
+        "output": "ciment",
+        "ingredients": {
+            "argile": 1,
+            "calcaire": 1
+        },
+        "required_profession": "mineur"
+    },
+    "béton": {
+        "output": "béton",
+        "ingredients": {
+            "ciment": 1,
+            "sable": 1,
+            "gravier": 1,
+            "eau": 1
+        },
+        "required_profession": "maçon"
+    },
+    "acier": {
+        "output": "acier",
+        "ingredients": {
+            "fer": 2,
+            "charbon": 1
+        },
+        "required_profession": "forgeron"
+    },
+    "verre": {
+        "output": "verre",
+        "ingredients": {
+            "sable": 2
+        },
+        "required_profession": "artisan_verre"
+    },
+    "papier": {
+        "output": "papier",
+        "ingredients": {
+            "bois": 1,
+            "eau": 1
+        },
+        "required_profession": "artisan_textile"
+    },
+    "bière": {
+        "output": "bière",
+        "ingredients": {
+            "orge": 2,
+            "eau": 1
+        },
+        "required_profession": "brasseur"
+    },
+    "vin": {
+        "output": "vin",
+        "ingredients": {
+            "raisins": 2
+        },
+        "required_profession": "vigneron"
+    },
+    "whisky": {
+        "output": "whisky",
+        "ingredients": {
+            "orge": 2,
+            "eau": 1
+        },
+        "required_profession": "distillateur"
+    },
+    "planche_bois": {
+        "output": "planche_bois",
+        "ingredients": {
+            "bois": 1
+        },
+        "required_profession": "bûcheron"
+    },
+    "farine": {
+        "output": "farine",
+        "ingredients": {
+            "blé": 2
+        },
+        "required_profession": "meunier"
+    },
+    "jus_raisin": {
+        "output": "jus_raisin",
+        "ingredients": {
+            "raisins": 1
+        },
+        "required_profession": "vigneron"
+    },
+    "fil_lin": {
+        "output": "fil_lin",
+        "ingredients": {
+            "lin": 1
+        },
+        "required_profession": "fileur"
+    },
+    "tissu_lin": {
+        "output": "tissu_lin",
+        "ingredients": {
+            "fil_lin": 2
+        },
+        "required_profession": "tisserand"
+    }
+}

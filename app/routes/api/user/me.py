@@ -1,49 +1,48 @@
 # app/routes/api/user/me.py
+"""
+Routes user pour le profil utilisateur.
+"""
 
 from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.orm import Session
+
 from utils.logger import get_logger
 from utils.deps import get_current_user_required
-from utils.auth import get_active_devices
-from utils.json import load_json, save_json
-from config import REFRESH_TOKENS_FILE
+from database.connection import get_db
+from models import User, RefreshToken
+from schemas.user import UserResponse
+from sqlalchemy import text
 
 logger = get_logger(__name__)
 
 router = APIRouter(prefix="/me", tags=["Users - Profile"], dependencies=[Depends(get_current_user_required)])
 
-# --------------------------------------------------------------------
-# PROFILE
-# --------------------------------------------------------------------
-@router.get("/")
-def me(user = Depends(get_current_user_required)):
+
+@router.get("/", response_model=UserResponse)
+def get_profile(
+    user=Depends(get_current_user_required),
+    db: Session = Depends(get_db)
+):
     """
-    Return current user info (without password_hash).
+    Récupère le profil complet de l'utilisateur connecté.
     """
     user_id = user.get("id") if isinstance(user, dict) else getattr(user, "id", None)
     logger.debug(f"👤 Récupération du profil pour user_id={user_id}")
     
-    # user can be dict or dataclass
-    if isinstance(user, dict):
-        safe = dict(user)
-        safe.pop("password_hash", None)
-        return safe
-    # dataclass-like fallback
-    try:
-        return {
-            "id": getattr(user, "id", None),
-            "firstname": getattr(user, "firstname", ""),
-            "lastname": getattr(user, "lastname", ""),
-            "mail": getattr(user, "mail", ""),
-            "login": getattr(user, "login", "")
-        }
-    except Exception:
-        return {}
+    # Récupère l'utilisateur depuis la DB pour avoir les données à jour
+    db_user = db.query(User).filter(User.id == user_id).first()
+    
+    if not db_user:
+        raise HTTPException(404, "User not found")
+    
+    return db_user
 
-# ---------------------------------------------------------------------------
-# DEVICE LIST
-# ---------------------------------------------------------------------------
+
 @router.get("/devices")
-def list_devices(user = Depends(get_current_user_required)):
+def list_devices(
+    user=Depends(get_current_user_required),
+    db: Session = Depends(get_db)
+):
     """Liste tous les appareils connectés de l'utilisateur."""
     uid = user.get("id") if isinstance(user, dict) else getattr(user, "id", None)
     
@@ -54,19 +53,38 @@ def list_devices(user = Depends(get_current_user_required)):
     logger.debug(f"📱 Liste des devices pour user_id={uid}")
     
     try:
-        devices = get_active_devices(uid)
-        logger.debug(f"   → {len(devices)} device(s) actif(s) trouvé(s)")
-        return {"devices": devices}
+        devices = (
+            db.query(RefreshToken)
+            .filter(RefreshToken.user_id == uid)
+            .filter(RefreshToken.expires_at > text("NOW()"))  # ✅ Utilise text() pour SQL brut
+            .all()
+        )
+        
+        result = [
+            {
+                "token_hash": d.token_hash,
+                "device_id": d.device_id,
+                "device_name": d.device_name,
+                "created_at": d.created_at.isoformat(),
+                "expires_at": d.expires_at.isoformat(),
+            }
+            for d in devices
+        ]
+        
+        logger.debug(f"   → {len(result)} device(s) actif(s) trouvé(s)")
+        return {"devices": result}
+        
     except Exception as e:
         logger.error(f"❌ Erreur lors de la récupération des devices: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail="Failed to retrieve devices")
 
 
-# ---------------------------------------------------------------------------
-# DEVICE REVOKE
-# ---------------------------------------------------------------------------
 @router.post("/devices/{device_id}/revoke")
-def revoke_device(device_id: str, user = Depends(get_current_user_required)):
+def revoke_device(
+    device_id: str,
+    user=Depends(get_current_user_required),
+    db: Session = Depends(get_db)
+):
     """Révoque un appareil spécifique."""
     uid = user.get("id") if isinstance(user, dict) else getattr(user, "id", None)
     
@@ -77,26 +95,20 @@ def revoke_device(device_id: str, user = Depends(get_current_user_required)):
     logger.info(f"🔒 Révocation du device {device_id} pour user_id={uid}")
 
     try:
-        # Remove tokens matching the device (hashed store)
-        store = load_json(REFRESH_TOKENS_FILE) or {}
-        to_delete = []
-
-        # Need to check hashed entries
-        for token_hash, meta in store.items():
-            if meta.get("user_id") == uid and meta.get("device_id") == device_id:
-                to_delete.append(token_hash)
-
-        logger.debug(f"   → {len(to_delete)} token(s) à supprimer")
+        deleted = (
+            db.query(RefreshToken)
+            .filter(RefreshToken.user_id == uid)
+            .filter(RefreshToken.device_id == device_id)
+            .delete()
+        )
         
-        for th in to_delete:
-            store.pop(th, None)
+        db.commit()
+        
+        logger.info(f"✅ Device {device_id} révoqué avec succès ({deleted} token(s) supprimé(s))")
 
-        save_json(REFRESH_TOKENS_FILE, store)
-
-        logger.info(f"✅ Device {device_id} révoqué avec succès ({len(to_delete)} token(s) supprimé(s))")
-
-        return {"revoked": len(to_delete)}
+        return {"revoked": deleted}
         
     except Exception as e:
+        db.rollback()
         logger.error(f"❌ Erreur lors de la révocation du device: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail="Failed to revoke device")

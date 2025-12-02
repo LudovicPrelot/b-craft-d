@@ -1,16 +1,45 @@
 services:
+  postgres:
+    image: postgres:17-bookworm
+    container_name: bcraftd-postgres
+    environment:
+      POSTGRES_DB: bcraftd
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "${POSTGRES_PORT}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - proxy
+    restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d bcraftd"]
+      interval: ${POSTGRES_HEALTHCHECK_INTERVAL}
+      timeout: ${POSTGRES_HEALTHCHECK_TIMEOUT}
+      retries: ${POSTGRES_HEALTHCHECK_RETRIES}
+
   python:
     container_name: python
     build: .
     ports:
       - "5000:80"
     volumes:
-        - ./app:/app
+      - ./app:/app
     restart: always
     networks:
-        - proxy
-        
+      - proxy
+    depends_on:
+      postgres:
+        condition: service_healthy  # ✅ Attend que postgres soit prêt
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@bcraftd-postgres:${POSTGRES_PORT}/bcraftd
+
+volumes:
+  postgres_data:
+
 networks:
-    proxy:
-        name: dev
-        external: true
+  proxy:
+    name: ${PROXY_NETWORK_NAME}
+    driver: bridge
+    external: true

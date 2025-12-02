@@ -1,7 +1,7 @@
 from typing import Dict, List, Optional
 from pathlib import Path
 import json
-from models.recipes import Recipe
+from app.models.recipe import Recipe
 import config
 
 class RecipeService:
