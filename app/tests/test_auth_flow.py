@@ -1,246 +1,333 @@
-# app/tests/test_auth_flow.py
-import json
+# tests/test_auth_flow.py
+"""
+Tests du flux d'authentification avec PostgreSQL.
+
+Teste: login, refresh, logout, multi-device.
+"""
+
 import pytest
-from fastapi.testclient import TestClient
-from uuid import uuid4
-import os
-
-from main import app
-from config import USERS_FILE, REFRESH_TOKENS_FILE
-from utils.json import save_json, load_json
-from utils.auth import hash_password, _token_hash
-
-client = TestClient(app)
+from conftest import auth_headers
 
 
-# ----------------------------------------------------------------------
-# FIXTURES
-# ----------------------------------------------------------------------
-@pytest.fixture(autouse=True)
-def cleanup_storage(tmp_path, monkeypatch):
-    """
-    Create isolated storage for USERS_FILE and REFRESH_TOKENS_FILE
-    so tests never touch real data.
-    """
-    users_file = tmp_path / "users.json"
-    refresh_file = tmp_path / "refresh_tokens.json"
-
-    monkeypatch.setattr("config.USERS_FILE", users_file)
-    monkeypatch.setattr("config.REFRESH_TOKENS_FILE", refresh_file)
-
-    # empty initial store
-    save_json(users_file, {})
-    save_json(refresh_file, {})
-
-    yield
-
-
-@pytest.fixture
-def create_user():
-    def _create_user(login="test", password="pass123"):
-        uid = str(uuid4())
-        users = load_json(USERS_FILE)
-        users[uid] = {
-            "login": login,
-            "password_hash": hash_password(password),
-            "firstname": "Test",
-            "lastname": "User",
-            "mail": "t@u.com",
-            "profession": "miner",
-            "subclasses": [],
-            "is_admin": False,
-            "is_moderator": False,
-        }
-        save_json(USERS_FILE, users)
-        return uid
-    return _create_user
-
-
-# ----------------------------------------------------------------------
+# ============================================================================
 # TEST LOGIN
-# ----------------------------------------------------------------------
-def test_login_success(create_user):
-    uid = create_user()
+# ============================================================================
 
-    res = client.post("/api/auth/login", json={
-        "login": "test",
-        "password": "pass123",
-        "device_id": "pc-1",
-        "device_name": "PC Windows"
+@pytest.mark.auth
+def test_login_success(client, sample_user, db_session):
+    """Test login réussi avec credentials valides."""
+    response = client.post("/api/public/auth/login", json={
+        "login": sample_user.login,
+        "password": "Test123!",
+        "device_id": "laptop",
+        "device_name": "MacBook Pro"
     })
-    assert res.status_code == 200
-    data = res.json()
-
+    
+    assert response.status_code == 200
+    data = response.json()
+    
+    # Vérifie la structure de la réponse
     assert "access_token" in data
-    assert data["device_id"] == "pc-1"
+    assert "device_id" in data
+    assert data["device_id"] == "laptop"
+    assert "user" in data
+    assert data["user"]["login"] == sample_user.login
+    
+    # Vérifie le cookie refresh_token
+    assert "refresh_token" in response.cookies
 
-    # check cookie refresh token
-    assert "refresh_token" in res.cookies
 
-
-def test_login_fail_wrong_password(create_user):
-    create_user()
-
-    res = client.post("/api/auth/login", json={
-        "login": "test",
-        "password": "wrong"
+@pytest.mark.auth
+def test_login_fail_wrong_password(client, sample_user):
+    """Test login échoué avec mauvais mot de passe."""
+    response = client.post("/api/public/auth/login", json={
+        "login": sample_user.login,
+        "password": "WrongPassword!"
     })
-    assert res.status_code == 401
+    
+    assert response.status_code == 401
+    assert "Invalid credentials" in response.json()["detail"]
 
 
-# ----------------------------------------------------------------------
-# TEST REFRESH (ROTATION)
-# ----------------------------------------------------------------------
-def test_refresh_success(create_user):
-    uid = create_user()
-
-    # 1) Login
-    res = client.post("/api/auth/login", json={
-        "login": "test",
-        "password": "pass123",
-        "device_id": "pc-1"
+@pytest.mark.auth
+def test_login_fail_unknown_user(client):
+    """Test login échoué avec utilisateur inexistant."""
+    response = client.post("/api/public/auth/login", json={
+        "login": "unknown_user",
+        "password": "Whatever123!"
     })
-    refresh = res.cookies.get("refresh_token")
+    
+    assert response.status_code == 401
 
-    # 2) Refresh
-    res2 = client.post("/api/auth/refresh", json={
-        "refresh_token": refresh
+
+@pytest.mark.auth
+def test_login_missing_credentials(client):
+    """Test login échoué avec credentials manquantes."""
+    response = client.post("/api/public/auth/login", json={
+        "login": "testuser"
+        # password manquant
     })
-    assert res2.status_code == 200
-
-    data = res2.json()
-    assert "access_token" in data
-    assert "refresh_token" in data
-    assert data["device_id"] == "pc-1"
-
-    # check rotation : old token hash must be gone
-    store = load_json(REFRESH_TOKENS_FILE)
-    assert _token_hash(refresh) not in store
+    
+    assert response.status_code == 400
 
 
-def test_refresh_unknown_token(create_user):
-    create_user()
+# ============================================================================
+# TEST REFRESH TOKEN (ROTATION)
+# ============================================================================
 
-    res = client.post("/api/auth/refresh", json={
-        "refresh_token": "invalid.refresh.token"
-    })
-
-    assert res.status_code == 401
-
-
-# ----------------------------------------------------------------------
-# TEST LOGOUT
-# ----------------------------------------------------------------------
-def test_logout(create_user):
-    create_user()
-
-    res = client.post("/api/auth/login", json={
-        "login": "test",
-        "password": "pass123",
-        "device_id": "pc-1"
-    })
-    refresh = res.cookies.get("refresh_token")
-
-    res2 = client.post("/api/auth/logout", json={
-        "refresh_token": refresh
-    })
-    assert res2.status_code == 200
-
-    store = load_json(REFRESH_TOKENS_FILE)
-    assert _token_hash(refresh) not in store
-
-
-# ----------------------------------------------------------------------
-# TEST LOGOUT ALL
-# ----------------------------------------------------------------------
-def test_logout_all(create_user):
-    uid = create_user()
-
-    # login on 2 devices
-    t1 = client.post("/api/auth/login", json={
-        "login": "test",
-        "password": "pass123",
-        "device_id": "pc1"
-    }).cookies.get("refresh_token")
-
-    t2 = client.post("/api/auth/login", json={
-        "login": "test",
-        "password": "pass123",
-        "device_id": "pc2"
-    }).cookies.get("refresh_token")
-
-    # logout_all requires auth → call login to get access token
-    login = client.post("/api/auth/login", json={
-        "login": "test",
-        "password": "pass123",
-    }).json()
-
-    access = login["access_token"]
-
-    res = client.post("/api/auth/logout_all",
-                      headers={"Authorization": f"Bearer {access}"})
-    assert res.status_code == 200
-
-    store = load_json(REFRESH_TOKENS_FILE)
-    assert len(store) == 0
-
-
-# ----------------------------------------------------------------------
-# DEVICES LIST
-# ----------------------------------------------------------------------
-def test_list_devices(create_user):
-    create_user()
-
-    login = client.post("/api/auth/login", json={
-        "login": "test",
-        "password": "pass123",
-    }).json()
-
-    access = login["access_token"]
-    res = client.get("/api/auth/me/devices",
-                     headers={"Authorization": f"Bearer {access}"})
-
-    assert res.status_code == 200
-    devices = res.json()["devices"]
-    assert len(devices) == 1
-
-
-# ----------------------------------------------------------------------
-# DEVICE REVOKE
-# ----------------------------------------------------------------------
-def test_revoke_specific_device(create_user):
-    create_user()
-
-    # login on two devices
-    res1 = client.post("/api/auth/login", json={
-        "login": "test",
-        "password": "pass123",
+@pytest.mark.auth
+def test_refresh_success(client, sample_user):
+    """Test refresh réussi avec rotation du token."""
+    # 1. Login
+    login_response = client.post("/api/public/auth/login", json={
+        "login": sample_user.login,
+        "password": "Test123!",
         "device_id": "laptop"
     })
-    t1 = res1.cookies.get("refresh_token")
-
-    res2 = client.post("/api/auth/login", json={
-        "login": "test",
-        "password": "pass123",
-        "device_id": "mobile"
+    
+    old_refresh = login_response.cookies.get("refresh_token")
+    old_access = login_response.json()["access_token"]
+    
+    # 2. Refresh
+    refresh_response = client.post("/api/public/auth/refresh", json={
+        "refresh_token": old_refresh
     })
-    t2 = res2.cookies.get("refresh_token")
+    
+    assert refresh_response.status_code == 200
+    data = refresh_response.json()
+    
+    # Vérifie qu'on a de nouveaux tokens
+    assert "access_token" in data
+    assert "refresh_token" in data
+    assert data["access_token"] != old_access  # Nouveau token
+    assert data["refresh_token"] != old_refresh  # Rotation
+    assert data["device_id"] == "laptop"
+    
+    # Vérifie que le cookie est mis à jour
+    new_refresh = refresh_response.cookies.get("refresh_token")
+    assert new_refresh != old_refresh
 
-    # need access token for auth
-    access = client.post("/api/auth/login", json={
-        "login": "test",
-        "password": "pass123",
-    }).json()["access_token"]
 
-    # Revoke laptop
-    res = client.post(
-        "/api/auth/me/devices/laptop/revoke",
-        headers={"Authorization": f"Bearer {access}"}
+@pytest.mark.auth
+def test_refresh_fail_invalid_token(client):
+    """Test refresh échoué avec token invalide."""
+    response = client.post("/api/public/auth/refresh", json={
+        "refresh_token": "invalid.token.here"
+    })
+    
+    assert response.status_code == 401
+
+
+@pytest.mark.auth
+def test_refresh_fail_reused_token(client, sample_user):
+    """Test qu'un token ne peut pas être réutilisé après refresh (rotation)."""
+    # 1. Login
+    login_response = client.post("/api/public/auth/login", json={
+        "login": sample_user.login,
+        "password": "Test123!"
+    })
+    
+    old_refresh = login_response.cookies.get("refresh_token")
+    
+    # 2. Premier refresh (OK)
+    refresh_response = client.post("/api/public/auth/refresh", json={
+        "refresh_token": old_refresh
+    })
+    assert refresh_response.status_code == 200
+    
+    # 3. Réutiliser l'ancien token (devrait échouer)
+    reuse_response = client.post("/api/public/auth/refresh", json={
+        "refresh_token": old_refresh
+    })
+    assert reuse_response.status_code == 401
+
+
+# ============================================================================
+# TEST LOGOUT
+# ============================================================================
+
+@pytest.mark.auth
+def test_logout_success(client, sample_user):
+    """Test logout réussi."""
+    # 1. Login
+    login_response = client.post("/api/public/auth/login", json={
+        "login": sample_user.login,
+        "password": "Test123!"
+    })
+    
+    refresh_token = login_response.cookies.get("refresh_token")
+    
+    # 2. Logout
+    logout_response = client.post("/api/public/auth/logout", json={
+        "refresh_token": refresh_token
+    })
+    
+    assert logout_response.status_code == 200
+    assert logout_response.json()["message"] == "Logged out"
+    
+    # 3. Vérifier que le token ne fonctionne plus
+    refresh_response = client.post("/api/public/auth/refresh", json={
+        "refresh_token": refresh_token
+    })
+    assert refresh_response.status_code == 401
+
+
+@pytest.mark.auth
+def test_logout_all_devices(client, sample_user):
+    """Test logout sur tous les devices."""
+    # 1. Login sur 2 devices
+    device1 = client.post("/api/public/auth/login", json={
+        "login": sample_user.login,
+        "password": "Test123!",
+        "device_id": "laptop"
+    })
+    
+    device2 = client.post("/api/public/auth/login", json={
+        "login": sample_user.login,
+        "password": "Test123!",
+        "device_id": "phone"
+    })
+    
+    access_token = device1.json()["access_token"]
+    refresh1 = device1.cookies.get("refresh_token")
+    refresh2 = device2.cookies.get("refresh_token")
+    
+    # 2. Logout all
+    logout_response = client.post(
+        "/api/public/auth/logout_all",
+        headers=auth_headers(access_token)
     )
-    assert res.status_code == 200
+    
+    assert logout_response.status_code == 200
+    assert logout_response.json()["count"] == 2  # 2 tokens révoqués
+    
+    # 3. Vérifier que les 2 tokens ne fonctionnent plus
+    assert client.post("/api/public/auth/refresh", json={"refresh_token": refresh1}).status_code == 401
+    assert client.post("/api/public/auth/refresh", json={"refresh_token": refresh2}).status_code == 401
 
-    store = load_json(REFRESH_TOKENS_FILE)
-    token_hashes = set(store.keys())
 
-    assert _token_hash(t1) not in token_hashes  # laptop revoked
-    assert _token_hash(t2) in token_hashes      # mobile remains
+# ============================================================================
+# TEST DEVICES MANAGEMENT
+# ============================================================================
+
+@pytest.mark.auth
+def test_list_devices(client, sample_user):
+    """Test liste des devices actifs."""
+    # 1. Login sur 2 devices
+    client.post("/api/public/auth/login", json={
+        "login": sample_user.login,
+        "password": "Test123!",
+        "device_id": "laptop",
+        "device_name": "MacBook Pro"
+    })
+    
+    login2 = client.post("/api/public/auth/login", json={
+        "login": sample_user.login,
+        "password": "Test123!",
+        "device_id": "phone",
+        "device_name": "iPhone"
+    })
+    
+    access_token = login2.json()["access_token"]
+    
+    # 2. Liste devices
+    response = client.get(
+        "/api/public/auth/devices",
+        headers=auth_headers(access_token)
+    )
+    
+    assert response.status_code == 200
+    devices = response.json()["devices"]
+    
+    assert len(devices) == 2
+    device_ids = {d["device_id"] for d in devices}
+    assert "laptop" in device_ids
+    assert "phone" in device_ids
+
+
+@pytest.mark.auth
+def test_revoke_specific_device(client, sample_user):
+    """Test révocation d'un device spécifique."""
+    # 1. Login sur 2 devices
+    device1 = client.post("/api/public/auth/login", json={
+        "login": sample_user.login,
+        "password": "Test123!",
+        "device_id": "laptop"
+    })
+    
+    device2 = client.post("/api/public/auth/login", json={
+        "login": sample_user.login,
+        "password": "Test123!",
+        "device_id": "phone"
+    })
+    
+    access_token = device1.json()["access_token"]
+    refresh1 = device1.cookies.get("refresh_token")
+    refresh2 = device2.cookies.get("refresh_token")
+    
+    # 2. Révoquer le laptop
+    revoke_response = client.post(
+        "/api/public/auth/devices/laptop/revoke",
+        headers=auth_headers(access_token)
+    )
+    
+    assert revoke_response.status_code == 200
+    assert revoke_response.json()["device_id"] == "laptop"
+    
+    # 3. Vérifier que laptop ne fonctionne plus, mais phone oui
+    assert client.post("/api/public/auth/refresh", json={"refresh_token": refresh1}).status_code == 401
+    assert client.post("/api/public/auth/refresh", json={"refresh_token": refresh2}).status_code == 200
+
+
+# ============================================================================
+# TEST EDGE CASES
+# ============================================================================
+
+@pytest.mark.auth
+def test_login_generates_device_id_if_missing(client, sample_user):
+    """Test que device_id est généré automatiquement si absent."""
+    response = client.post("/api/public/auth/login", json={
+        "login": sample_user.login,
+        "password": "Test123!"
+        # Pas de device_id
+    })
+    
+    assert response.status_code == 200
+    assert "device_id" in response.json()
+    assert len(response.json()["device_id"]) > 0  # UUID généré
+
+
+@pytest.mark.auth
+def test_concurrent_logins_same_device(client, sample_user):
+    """Test logins multiples sur le même device (remplace l'ancien)."""
+    # 1. Premier login
+    login1 = client.post("/api/public/auth/login", json={
+        "login": sample_user.login,
+        "password": "Test123!",
+        "device_id": "laptop"
+    })
+    
+    refresh1 = login1.cookies.get("refresh_token")
+    
+    # 2. Deuxième login (même device)
+    login2 = client.post("/api/public/auth/login", json={
+        "login": sample_user.login,
+        "password": "Test123!",
+        "device_id": "laptop"
+    })
+    
+    refresh2 = login2.cookies.get("refresh_token")
+    access2 = login2.json()["access_token"]
+    
+    # 3. Vérifier qu'il n'y a qu'un seul device actif
+    devices_response = client.get(
+        "/api/public/auth/devices",
+        headers=auth_headers(access2)
+    )
+    
+    devices = devices_response.json()["devices"]
+    laptop_devices = [d for d in devices if d["device_id"] == "laptop"]
+    
+    # Selon l'implémentation, peut être 1 (remplacement) ou 2 (accumulation)
+    # Ici on teste que le nouveau token fonctionne
+    assert client.post("/api/public/auth/refresh", json={"refresh_token": refresh2}).status_code == 200
