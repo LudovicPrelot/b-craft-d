@@ -2,10 +2,10 @@
 """
 Connexion PostgreSQL avec SQLAlchemy.
 """
+
 from sqlalchemy import create_engine, event
 from sqlalchemy.orm import sessionmaker, declarative_base, Session
 from sqlalchemy.pool import NullPool
-from sqlalchemy.sql import text
 from contextlib import contextmanager
 from typing import Generator
 import os
@@ -114,11 +114,20 @@ def init_db():
     """
     logger.info("🔧 Initialisation de la base de données...")
     
-    # Import tous les modèles pour que SQLAlchemy les connaisse
-    # from database import models  # noqa: F401
+    # Import tous les modèles individuellement pour que SQLAlchemy les connaisse
+    from models import (
+        User, 
+        RefreshToken, 
+        Profession, 
+        Resource, 
+        Recipe, 
+        LootTable, 
+        Quest, 
+        Setting
+    )
     
     # Crée les tables
-    # Base.metadata.create_all(bind=engine)
+    Base.metadata.create_all(bind=engine)
     
     logger.info("✅ Tables créées avec succès")
 
@@ -131,7 +140,7 @@ def check_db_connection() -> bool:
     """Vérifie que la DB est accessible."""
     try:
         with engine.connect() as conn:
-            conn.execute(text("SELECT 1"))
+            conn.execute("SELECT 1")
         return True
     except Exception as e:
         logger.error(f"❌ Database connection failed: {e}")

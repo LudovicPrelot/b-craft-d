@@ -15,7 +15,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 import json
 from datetime import datetime, timedelta
 from database.connection import SessionLocal, init_db
-from database.models import (
+from models import (
     User, RefreshToken, Profession, Resource, Recipe, 
     LootTable, Quest, Setting
 )
