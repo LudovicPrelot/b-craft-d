@@ -14,7 +14,7 @@ from config import MONGO_URL
 @pytest.fixture(scope="module")
 def logging_service():
     """Fixture pour initialiser le service de logging"""
-    service = LoggingService(mongo_uri=MONGO_URL, db_name="bcraftd_test")
+    service = LoggingService()
     yield service
     
     # Cleanup après tous les tests

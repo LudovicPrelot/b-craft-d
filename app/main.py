@@ -53,17 +53,18 @@ async def lifespan(app: FastAPI):
     
     try:
         db = SessionLocal()
-        deleted = cleanup_expired_tokens(db) # Nettoie les tokens expirés au démarrage
-        if deleted > 0:
-            logger.info(f"🧹 {deleted} refresh token(s) expiré(s) nettoyé(s)")
+        # deleted = cleanup_expired_tokens(db) # Nettoie les tokens expirés au démarrage
+        # if deleted > 0:
+        #     logger.info(f"🧹 {deleted} refresh token(s) expiré(s) nettoyé(s)")
         
-        init_feature_flags(db)  # Crée les feature flags par défaut
-        init_default_settings(db)  # Crée les settings par défaut
+        # init_feature_flags(db)  # Crée les feature flags par défaut
+        # init_default_settings(db)  # Crée les settings par défaut
         db.close()
 
-        yield
     except Exception as e:
         logger.warning(f"⚠️  Erreur lors du nettoyage des tokens: {e}")
+
+    yield
     
     logger.info("✅ Application prête!")
     
