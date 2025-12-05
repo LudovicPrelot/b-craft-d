@@ -3,7 +3,7 @@
 Schémas Pydantic pour les ressources.
 """
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 from typing import Optional
 
 
@@ -17,10 +17,7 @@ class ResourceBase(BaseModel):
 
 
 class ResourceCreate(ResourceBase):
-    """Schéma pour la création d'une ressource."""
-    id: str = Field(..., min_length=1, max_length=50, description="Identifiant unique")
-    
-    class Config:
+    model_config = ConfigDict(
         json_schema_extra = {
             "example": {
                 "id": "fer",
@@ -31,6 +28,10 @@ class ResourceCreate(ResourceBase):
                 "stack_size": 999
             }
         }
+    )
+    """Schéma pour la création d'une ressource."""
+    id: str = Field(..., min_length=1, max_length=50, description="Identifiant unique")
+        
 
 
 class ResourceUpdate(BaseModel):
@@ -51,11 +52,8 @@ class ResourceUpdate(BaseModel):
 
 
 class ResourceResponse(ResourceBase):
-    """Schéma pour la réponse API (inclut l'ID)."""
-    id: str
-    
-    class Config:
-        from_attributes = True  # Permet la conversion depuis SQLAlchemy models
+    model_config = ConfigDict(
+        from_attributes = True, 
         json_schema_extra = {
             "example": {
                 "id": "fer",
@@ -66,3 +64,7 @@ class ResourceResponse(ResourceBase):
                 "stack_size": 999
             }
         }
+    )
+
+    """Schéma pour la réponse API (inclut l'ID)."""
+    id: str

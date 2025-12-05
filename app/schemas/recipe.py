@@ -3,7 +3,7 @@
 Schémas Pydantic pour les recettes de crafting.
 """
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 from typing import Dict, Optional
 
 
@@ -30,10 +30,7 @@ class RecipeBase(BaseModel):
 
 
 class RecipeCreate(RecipeBase):
-    """Schéma pour la création d'une recette."""
-    id: str = Field(..., min_length=1, max_length=50, description="Identifiant unique")
-    
-    class Config:
+    model_config = ConfigDict(
         json_schema_extra = {
             "example": {
                 "id": "ciment",
@@ -47,6 +44,9 @@ class RecipeCreate(RecipeBase):
                 "xp_reward": 10
             }
         }
+    )
+    """Schéma pour la création d'une recette."""
+    id: str = Field(..., min_length=1, max_length=50, description="Identifiant unique")
 
 
 class RecipeUpdate(BaseModel):
@@ -73,11 +73,8 @@ class RecipeUpdate(BaseModel):
 
 
 class RecipeResponse(RecipeBase):
-    """Schéma pour la réponse API."""
-    id: str
-    
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(
+        from_attributes = True, 
         json_schema_extra = {
             "example": {
                 "id": "ciment",
@@ -91,3 +88,7 @@ class RecipeResponse(RecipeBase):
                 "xp_reward": 10
             }
         }
+    )
+    
+    """Schéma pour la réponse API."""
+    id: str
