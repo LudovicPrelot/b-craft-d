@@ -9,6 +9,7 @@ from pathlib import Path
 # Racine du projet
 BASE_DIR = Path(__file__).resolve().parent
 API_BASE_URL = os.getenv("API_BASE_URL")
+MONGO_URL = os.getenv("MONGO_URL")
 
 # ---------------------------------------------------------------------------
 # ENVIRONMENT VARIABLES (lecture simple) – valeurs par défaut en dev

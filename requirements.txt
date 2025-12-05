@@ -2,12 +2,19 @@ fastapi[all]==0.122.0
 pydantic==2.12.5
 uvicorn==0.38.0
 itsdangerous==2.2.0
-bcrypt==4.3.0
+bcrypt==5.0.0
 python-jose==3.3.0
 passlib==1.7.4
 python-dotenv==1.2.1
+pytest==7.4.3  # Pour tests
 
 # ✅ Ajouts PostgreSQL
 sqlalchemy==2.0.36
 psycopg2-binary==2.9.10
 alembic==1.14.0  # Pour les migrations de schéma
+
+# ✅ Ajouts Mongo
+pymongo==4.6.0
+
+# ✅ Ajouts Redis
+redis==5.0.1

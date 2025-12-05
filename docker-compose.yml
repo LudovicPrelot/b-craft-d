@@ -1,7 +1,7 @@
 services:
   postgres:
     image: postgres:17-bookworm
-    container_name: bcraftd-postgres
+    container_name: ${POSTGRES_HOST}
     environment:
       POSTGRES_DB: bcraftd
       POSTGRES_USER: ${POSTGRES_USER}
@@ -18,6 +18,85 @@ services:
       interval: ${POSTGRES_HEALTHCHECK_INTERVAL}
       timeout: ${POSTGRES_HEALTHCHECK_TIMEOUT}
       retries: ${POSTGRES_HEALTHCHECK_RETRIES}
+      
+  mongo:
+    image: mongo
+    container_name: ${MONGO_HOST}
+    restart: always
+    volumes:
+      - mongodb_data:/data/db
+      - ./mongodb_setup_v3.js:/mongodb_setup_v3.js
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD}
+    ports:
+      - ${MONGO_PORT}
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:${MONGO_PORT}/test --quiet
+      interval: ${MONGO_HEALTHCHECK_INTERVAL}
+      timeout: ${MONGO_HEALTHCHECK_TIMEOUT}
+      retries: ${MONGO_HEALTHCHECK_RETRIES}            
+    networks:
+      - proxy
+
+  # =====================================================
+  # Mongo Express (UI Administration - Optionnel)
+  # =====================================================
+  mongo-express:
+    image: mongo-express:latest
+    container_name: bcraftd-mongo-express
+    restart: unless-stopped
+    environment:
+      ME_CONFIG_MONGODB_ADMINUSERNAME: ${MONGO_INITDB_ROOT_USERNAME}
+      ME_CONFIG_MONGODB_ADMINPASSWORD: ${MONGO_INITDB_ROOT_PASSWORD}
+      ME_CONFIG_MONGODB_URL: mongodb://${MONGO_INITDB_ROOT_USERNAME}:${MONGO_INITDB_ROOT_PASSWORD}@mongo:27017/
+      ME_CONFIG_BASICAUTH_USERNAME: ${MONGO_EXPRESS_USER}
+      ME_CONFIG_BASICAUTH_PASSWORD: ${MONGO_EXPRESS_PASS}
+    ports:
+      - "8082:8081"
+    networks:
+      - proxy
+    depends_on:
+      - mongo
+      
+  # =====================================================
+  # Redis Cache
+  # =====================================================
+  redis:
+    image: redis:7.2-bookworm
+    container_name: bcraftd-redis
+    restart: unless-stopped
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+    volumes:
+      - redis_data:/data
+      - ./redis/redis.conf:/usr/local/etc/redis/redis.conf:ro
+    ports:
+      - "6379:6379"
+    networks:
+      - proxy
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    command: redis-server /usr/local/etc/redis/redis.conf --requirepass ${REDIS_PASSWORD}
+
+  # =====================================================
+  # Redis Commander (UI Administration - Optionnel)
+  # =====================================================
+  redis-commander:
+    image: ghcr.io/joeferner/redis-commander:latest
+    container_name: bcraftd-redis-commander
+    restart: unless-stopped
+    environment:
+      - REDIS_HOSTS=local:redis:6379:0:${REDIS_PASSWORD}
+    ports:
+      - "5001:80"
+    networks:
+      - proxy
+    depends_on:
+      - redis
 
   python:
     container_name: python
@@ -32,11 +111,32 @@ services:
     depends_on:
       postgres:
         condition: service_healthy  # ✅ Attend que postgres soit prêt
+      mongo:
+        condition: service_healthy  # ✅ Attend que mongo soit prêt
+      redis:
+        condition: service_healthy  # ✅ Attend que redis soit prêt
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@bcraftd-postgres:${POSTGRES_PORT}/bcraftd
 
 volumes:
   postgres_data:
+    driver: local # Define the driver and options under the volume name
+    driver_opts:
+      type: none
+      device: ./data/postgres
+      o: bind
+  mongodb_data:
+    driver: local # Define the driver and options under the volume name
+    driver_opts:
+      type: none
+      device: ./data/mongodb
+      o: bind
+  redis_data:
+    driver: local # Define the driver and options under the volume name
+    driver_opts:
+      type: none
+      device: ./data/redis
+      o: bind
 
 networks:
   proxy:

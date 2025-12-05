@@ -3,7 +3,7 @@
 Schémas Pydantic pour les professions.
 """
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 from typing import List, Optional
 
 
@@ -17,10 +17,7 @@ class ProfessionBase(BaseModel):
 
 
 class ProfessionCreate(ProfessionBase):
-    """Schéma pour la création d'une profession."""
-    id: str = Field(..., min_length=1, max_length=50, description="Identifiant unique")
-    
-    class Config:
+    model_config = ConfigDict(
         json_schema_extra = {
             "example": {
                 "id": "mineur",
@@ -31,31 +28,33 @@ class ProfessionCreate(ProfessionBase):
                 "subclasses": ["foreur", "géologue", "prospecteur"]
             }
         }
+    )
+
+    """Schéma pour la création d'une profession."""
+    id: str = Field(..., min_length=1, max_length=50, description="Identifiant unique")
 
 
 class ProfessionUpdate(BaseModel):
-    """Schéma pour la mise à jour d'une profession."""
-    name: Optional[str] = Field(None, min_length=1, max_length=100)
-    description: Optional[str] = Field(None, max_length=2000)
-    resources_found: Optional[List[str]] = None
-    allowed_recipes: Optional[List[str]] = None
-    subclasses: Optional[List[str]] = None
-    
-    class Config:
+    model_config = ConfigDict(
         json_schema_extra = {
             "example": {
                 "description": "Expert en extraction et transformation de minerais",
                 "subclasses": ["foreur", "géologue", "prospecteur", "sismologue"]
             }
         }
+    )
+    
+    """Schéma pour la mise à jour d'une profession."""
+    name: Optional[str] = Field(None, min_length=1, max_length=100)
+    description: Optional[str] = Field(None, max_length=2000)
+    resources_found: Optional[List[str]] = None
+    allowed_recipes: Optional[List[str]] = None
+    subclasses: Optional[List[str]] = None
 
 
 class ProfessionResponse(ProfessionBase):
-    """Schéma pour la réponse API."""
-    id: str
-    
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(
+        from_attributes = True,
         json_schema_extra = {
             "example": {
                 "id": "mineur",
@@ -66,3 +65,7 @@ class ProfessionResponse(ProfessionBase):
                 "subclasses": ["foreur", "géologue", "prospecteur"]
             }
         }
+    )
+    
+    """Schéma pour la réponse API."""
+    id: str

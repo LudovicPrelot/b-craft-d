@@ -3,7 +3,7 @@
 Schémas Pydantic pour les utilisateurs.
 """
 
-from pydantic import BaseModel, Field, EmailStr
+from pydantic import BaseModel, ConfigDict, Field, EmailStr
 from typing import Dict, List, Optional
 
 
@@ -31,6 +31,8 @@ class UserUpdate(BaseModel):
 
 
 class UserResponse(UserBase):
+    model_config = ConfigDict(from_attributes = True)
+
     """Réponse publique (SANS password_hash)."""
     id: str
     profession: str
@@ -42,16 +44,12 @@ class UserResponse(UserBase):
     biome: str
     is_admin: bool
     is_moderator: bool
-    
-    class Config:
-        from_attributes = True
 
 
 class UserProfileResponse(UserBase):
+    model_config = ConfigDict(from_attributes = True)
+
     """Profil utilisateur (version simplifiée)."""
     id: str
     profession: str
     level: int
-    
-    class Config:
-        from_attributes = True
