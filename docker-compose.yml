@@ -1,51 +1,78 @@
 services:
+  # =====================================================
+  # PostgreSQL Database
+  # =====================================================
   postgres:
     image: postgres:17-bookworm
     container_name: ${POSTGRES_HOST}
     environment:
-      POSTGRES_DB: bcraftd
+      POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      PGDATA: /var/lib/postgresql/data/pgdata
     ports:
       - "${POSTGRES_PORT}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./database-config/bcraftd_postgres_v3.0.sql:/docker-entrypoint-initdb.d/01_schema.sql:ro
     networks:
       - proxy
     restart: always
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d bcraftd"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: ${POSTGRES_HEALTHCHECK_INTERVAL}
       timeout: ${POSTGRES_HEALTHCHECK_TIMEOUT}
       retries: ${POSTGRES_HEALTHCHECK_RETRIES}
+
+  # =====================================================
+  # pgAdmin (UI Administration PostgreSQL - Optionnel)
+  # =====================================================
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: ${PGADMIN_HOST}
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD}
+      PGADMIN_CONFIG_SERVER_MODE: ${PGADMIN_CONFIG_SERVER_MODE}
+    ports:
+      - "${PGADMIN_PORT}:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    networks:
+      - proxy
+    restart: unless-stopped
+    depends_on:
+      - postgres
       
+  # =====================================================
+  # MongoDB Database
+  # =====================================================
   mongo:
     image: mongo
     container_name: ${MONGO_HOST}
-    restart: always
-    volumes:
-      - mongodb_data:/data/db
-      - ./mongodb_setup_v3.js:/mongodb_setup_v3.js
     environment:
       MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME}
       MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD}
     ports:
       - ${MONGO_PORT}
+    volumes:
+      - mongodb_data:/data/db
+      - ./database-config/mongodb_setup_v3.js:/mongodb_setup_v3.js           
+    networks:
+      - proxy
+    restart: always
     healthcheck:
       test: echo 'db.runCommand("ping").ok' | mongosh localhost:${MONGO_PORT}/test --quiet
       interval: ${MONGO_HEALTHCHECK_INTERVAL}
       timeout: ${MONGO_HEALTHCHECK_TIMEOUT}
-      retries: ${MONGO_HEALTHCHECK_RETRIES}            
-    networks:
-      - proxy
+      retries: ${MONGO_HEALTHCHECK_RETRIES} 
 
   # =====================================================
   # Mongo Express (UI Administration - Optionnel)
   # =====================================================
   mongo-express:
     image: mongo-express:latest
-    container_name: bcraftd-mongo-express
-    restart: unless-stopped
+    container_name: ${MONGO_EXPRESS_HOST}
     environment:
       ME_CONFIG_MONGODB_ADMINUSERNAME: ${MONGO_INITDB_ROOT_USERNAME}
       ME_CONFIG_MONGODB_ADMINPASSWORD: ${MONGO_INITDB_ROOT_PASSWORD}
@@ -56,6 +83,7 @@ services:
       - "8082:8081"
     networks:
       - proxy
+    restart: unless-stopped
     depends_on:
       - mongo
       
@@ -64,8 +92,7 @@ services:
   # =====================================================
   redis:
     image: redis:7.2-bookworm
-    container_name: bcraftd-redis
-    restart: unless-stopped
+    container_name: ${REDIS_HOST}
     environment:
       REDIS_PASSWORD: ${REDIS_PASSWORD}
     volumes:
@@ -75,6 +102,7 @@ services:
       - "6379:6379"
     networks:
       - proxy
+    restart: unless-stopped
     healthcheck:
       test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
       interval: 10s
@@ -87,27 +115,27 @@ services:
   # =====================================================
   redis-commander:
     image: ghcr.io/joeferner/redis-commander:latest
-    container_name: bcraftd-redis-commander
-    restart: unless-stopped
+    container_name: ${REDIS_COMMANDER_HOST}
     environment:
       - REDIS_HOSTS=local:redis:6379:0:${REDIS_PASSWORD}
     ports:
       - "5001:80"
     networks:
       - proxy
+    restart: unless-stopped
     depends_on:
       - redis
 
   python:
-    container_name: python
     build: .
+    container_name: ${PYTHON_HOST}
     ports:
-      - "5000:80"
+      - "${PYTHON_PORT}:80"
     volumes:
       - ./app:/app
-    restart: always
     networks:
       - proxy
+    restart: always
     depends_on:
       postgres:
         condition: service_healthy  # ✅ Attend que postgres soit prêt
@@ -115,8 +143,6 @@ services:
         condition: service_healthy  # ✅ Attend que mongo soit prêt
       redis:
         condition: service_healthy  # ✅ Attend que redis soit prêt
-    environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@bcraftd-postgres:${POSTGRES_PORT}/bcraftd
 
 volumes:
   postgres_data:
