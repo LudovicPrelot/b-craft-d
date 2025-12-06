@@ -54,6 +54,15 @@ class Workshop(Base):
     max_durability = Column(Integer, nullable=False, default=500)
     durability = Column(Integer, nullable=False, default=500)
     
+    # Statut de durabilité
+    durability_status_id = Column(
+        Integer,
+        ForeignKey("durability_status.id", ondelete="RESTRICT"),
+        nullable=False,
+        default=6,  # EXCELLENT
+        index=True
+    )
+    
     # Caractéristiques
     repair_cost_multiplier = Column(
         Integer,  # Stocké en centièmes (150 = 1.50)
@@ -79,6 +88,12 @@ class Workshop(Base):
     # Relations
     profession = relationship(
         "Profession",
+        back_populates="workshops",
+        lazy="joined"
+    )
+    
+    durability_status = relationship(
+        "DurabilityStatus",
         back_populates="workshops",
         lazy="joined"
     )
@@ -132,40 +147,44 @@ class Workshop(Base):
         return self.crafting_speed_bonus / 100.0
     
     @property
-    def durability_status(self) -> str:
+    def durability_status_name(self) -> str:
         """
-        Retourne le statut de durabilité en texte
+        Retourne le nom du statut de durabilité
         
         Returns:
-            str: "Excellent", "Bon", "Moyen", "Mauvais", "Cassé"
+            str: Nom du statut (broken, critical, poor, fair, good, excellent)
         """
-        percent = self.durability_percent
+        return self.durability_status.name if self.durability_status else "unknown"
+    
+    @property
+    def durability_status_color(self) -> str:
+        """
+        Retourne le code couleur du statut
         
-        if percent == 0:
-            return "Cassé"
-        elif percent < 25:
-            return "Mauvais"
-        elif percent < 50:
-            return "Moyen"
-        elif percent < 75:
-            return "Bon"
-        else:
-            return "Excellent"
+        Returns:
+            str: Code couleur hex
+        """
+        return self.durability_status.color_code if self.durability_status else "#6c757d"
     
     # ==================== MÉTHODES MÉTIER ====================
     
-    def use(self, amount: int = 5) -> bool:
+    def use(self, amount: int = 5, session=None) -> bool:
         """
         Utilise l'atelier, réduisant sa durabilité
         
         Args:
             amount (int): Montant de durabilité à retirer (défaut: 5)
+            session: Session SQLAlchemy (pour mise à jour durability_status_id)
         
         Returns:
             bool: True si utilisé avec succès, False si cassé
         
         Raises:
             ValueError: Si amount est négatif ou nul
+        
+        Note:
+            Le durability_status_id est mis à jour automatiquement par
+            le trigger SQL trg_update_workshop_status
         """
         if amount <= 0:
             raise ValueError("Le montant d'usure doit être positif")
@@ -176,17 +195,32 @@ class Workshop(Base):
         # Réduire la durabilité (sans descendre sous 0)
         self.durability = max(0, self.durability - amount)
         
+        # Le trigger SQL met à jour durability_status_id automatiquement
+        # Mais on peut aussi le faire manuellement si session fournie
+        if session:
+            from models.durability_status import DurabilityStatus
+            new_status = DurabilityStatus.get_status_for_durability(
+                session, self.durability, self.max_durability
+            )
+            if new_status:
+                self.durability_status_id = new_status.id
+        
         return True
     
-    def repair(self, full: bool = False) -> int:
+    def repair(self, full: bool = False, session=None) -> int:
         """
         Répare l'atelier
         
         Args:
             full (bool): Si True, répare complètement. Si False, répare 50%
+            session: Session SQLAlchemy (pour mise à jour durability_status_id)
         
         Returns:
             int: Montant de durabilité restaurée
+        
+        Note:
+            Le durability_status_id est mis à jour automatiquement par
+            le trigger SQL trg_update_workshop_status
         """
         old_durability = self.durability
         
@@ -198,6 +232,15 @@ class Workshop(Base):
             missing = self.max_durability - self.durability
             restore_amount = int(missing * 0.5)
             self.durability = min(self.max_durability, self.durability + restore_amount)
+        
+        # Mettre à jour le statut si session fournie
+        if session:
+            from models.durability_status import DurabilityStatus
+            new_status = DurabilityStatus.get_status_for_durability(
+                session, self.durability, self.max_durability
+            )
+            if new_status:
+                self.durability_status_id = new_status.id
         
         return self.durability - old_durability
     
@@ -268,7 +311,9 @@ class Workshop(Base):
             "max_durability": self.max_durability,
             "durability": self.durability,
             "durability_percent": self.durability_percent,
-            "durability_status": self.durability_status,
+            "durability_status_id": self.durability_status_id,
+            "durability_status_name": self.durability_status_name,
+            "durability_status_color": self.durability_status_color,
             "is_broken": self.is_broken,
             "repair_cost_multiplier": self.repair_cost_multiplier_float,
             "crafting_speed_bonus": self.crafting_speed_bonus_float,
@@ -281,6 +326,8 @@ class Workshop(Base):
                 "id": self.profession.id,
                 "name": self.profession.name
             } if self.profession else None
+            
+            data["durability_status_detail"] = self.durability_status.to_dict() if self.durability_status else None
             
             data["required_resources"] = [
                 {
@@ -304,5 +351,5 @@ class Workshop(Base):
         return (
             f"<Workshop(id={self.id}, name='{self.name}', "
             f"durability={self.durability}/{self.max_durability}, "
-            f"status='{self.durability_status}')>"
+            f"status='{self.durability_status_name}')>"
         )

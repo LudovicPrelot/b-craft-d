@@ -335,6 +335,27 @@ CREATE INDEX idx_recipes_resources_resource ON recipes_resources(resource_id);
 -- TABLES WORKSHOPS (3)
 -- =====================================================
 
+DROP TABLE IF EXISTS durability_status CASCADE;
+CREATE TABLE IF NOT EXISTS durability_status (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(20) NOT NULL UNIQUE,
+    description VARCHAR(255),
+    min_percent INTEGER NOT NULL CHECK (min_percent >= 0),
+    max_percent INTEGER NOT NULL CHECK (max_percent <= 100),
+    color_code VARCHAR(7) NOT NULL DEFAULT '#6c757d',
+    CONSTRAINT check_percent_range_valid CHECK (min_percent <= max_percent)
+);
+
+-- Index sur name pour recherches rapides
+CREATE INDEX idx_durability_status_name ON durability_status(name);
+
+-- Commentaires
+COMMENT ON TABLE durability_status IS 'Statuts de durabilité des ateliers (broken, critical, poor, fair, good, excellent)';
+COMMENT ON COLUMN durability_status.min_percent IS 'Pourcentage minimum de durabilité pour ce statut (0-100)';
+COMMENT ON COLUMN durability_status.max_percent IS 'Pourcentage maximum de durabilité pour ce statut (0-100)';
+COMMENT ON COLUMN durability_status.color_code IS 'Code couleur hex pour affichage UI (#RRGGBB)';
+
+
 DROP TABLE IF EXISTS workshops CASCADE;
 CREATE TABLE workshops (
     id SERIAL PRIMARY KEY,
@@ -344,6 +365,7 @@ CREATE TABLE workshops (
     required_level INTEGER NOT NULL DEFAULT 1,
     base_cost NUMERIC(10,2) NOT NULL DEFAULT 100.00,
     durability INTEGER NOT NULL DEFAULT 100,
+    durability_status_id INTEGER NOT NULL DEFAULT 6 REFERENCES durability_status(id) ON DELETE RESTRICT,
     max_durability INTEGER NOT NULL DEFAULT 100,
     efficiency_bonus NUMERIC(5,2) NOT NULL DEFAULT 1.00,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -355,6 +377,9 @@ CREATE TABLE workshops (
     CONSTRAINT chk_workshops_efficiency_bonus CHECK (efficiency_bonus >= 0)
 );
 CREATE INDEX idx_workshops_profession ON workshops(profession_id);
+CREATE INDEX idx_workshops_durability_status ON workshops(durability_status_id);
+
+COMMENT ON COLUMN workshops.durability_status_id IS 'Statut de durabilité actuel (broken=1, critical=2, poor=3, fair=4, good=5, excellent=6)';
 
 DROP TABLE IF EXISTS workshops_resources CASCADE;
 CREATE TABLE workshops_resources (
@@ -499,6 +524,14 @@ INSERT INTO market_status (status_name, description) VALUES
 ('cancelled', 'Offre annulée par le vendeur'), ('expired', 'Offre expirée'),
 ('reserved', 'Offre réservée (en attente de paiement)');
 
+INSERT INTO durability_status (id, name, description, min_percent, max_percent, color_code) VALUES
+(1, 'broken', 'Atelier cassé, inutilisable - Réparation urgente requise', 0, 0, '#dc3545'),
+(2, 'critical', 'État critique - Risque de casse imminent', 1, 24, '#ff6b6b'),
+(3, 'poor', 'Mauvais état - Réparation recommandée', 25, 49, '#ffc107'),
+(4, 'fair', 'État moyen - Surveillance nécessaire', 50, 74, '#17a2b8'),
+(5, 'good', 'Bon état - Fonctionnement optimal', 75, 99, '#28a745'),
+(6, 'excellent', 'État excellent - Comme neuf', 100, 100, '#20c997');
+
 ALTER TABLE resources ADD CONSTRAINT fk_resources_rarity FOREIGN KEY (rarity_id) REFERENCES rarities(id);
 ALTER TABLE resources ADD CONSTRAINT fk_resources_type FOREIGN KEY (type_id) REFERENCES resources_types(id);
 
@@ -551,6 +584,30 @@ BEGIN
 END; $$ LANGUAGE plpgsql;
 CREATE TRIGGER trg_workshop_usage BEFORE UPDATE ON workshops FOR EACH ROW EXECUTE FUNCTION fn_workshop_usage();
 
+CREATE OR REPLACE FUNCTION update_workshop_durability_status() RETURNS TRIGGER AS $$
+DECLARE
+    v_percent NUMERIC;
+    v_new_status_id INTEGER;
+BEGIN
+    -- Calculer le pourcentage de durabilité
+    IF NEW.max_durability = 0 THEN
+        v_percent := 0;
+    ELSE
+        v_percent := (NEW.durability::NUMERIC / NEW.max_durability::NUMERIC) * 100;
+    END IF;
+    
+    -- Déterminer le nouveau statut
+    SELECT id INTO v_new_status_id FROM durability_status WHERE v_percent >= min_percent AND v_percent <= max_percent LIMIT 1;
+    
+    -- Si statut trouvé, le mettre à jour
+    IF v_new_status_id IS NOT NULL THEN
+        NEW.durability_status_id := v_new_status_id;
+    END IF;
+    
+    RETURN NEW;
+END; $$ LANGUAGE plpgsql;
+CREATE TRIGGER trg_update_workshop_durability_status BEFORE INSERT OR UPDATE OF durability, max_durability ON workshops FOR EACH ROW EXECUTE FUNCTION update_workshop_durability_status();
+
 CREATE OR REPLACE FUNCTION fn_check_inventory_quantity() RETURNS TRIGGER AS $$
 BEGIN
     IF NEW.quantity < 0 THEN RAISE EXCEPTION 'La quantité en inventaire ne peut pas être négative'; END IF;
@@ -580,7 +637,7 @@ BEGIN
     IF NEW.status_id = 2 AND OLD.status_id != 2 AND NEW.buyer_id IS NOT NULL THEN
         UPDATE users SET coins = coins + NEW.total_price WHERE id = NEW.seller_id;
         UPDATE users SET coins = coins - NEW.total_price WHERE id = NEW.buyer_id;
-        INSERT INTO inventory (user_id, resource_id, quantity) VALUES (NEW.buyer_id, NEW.resource_id, NEW.quantity)
+        INSERT INTO inventory (user_id, resource_id, quantity) VALUES (NEW.buyer_id, NEW.resource_id, NEW.quantity) 
         ON CONFLICT (user_id, resource_id) DO UPDATE SET quantity = inventory.quantity + EXCLUDED.quantity;
         UPDATE user_statistics SET total_items_sold = total_items_sold + NEW.quantity, total_sales_value = total_sales_value + NEW.total_price WHERE user_id = NEW.seller_id;
         UPDATE user_statistics SET total_items_bought = total_items_bought + NEW.quantity, total_purchases_value = total_purchases_value + NEW.total_price WHERE user_id = NEW.buyer_id;
@@ -811,4 +868,4 @@ REFRESH MATERIALIZED VIEW mv_resource_price_history;
 -- =====================================================
 
 SELECT 'B-CraftD PostgreSQL v3.0 - Installation réussie' AS message,
-       '27 tables, 11 triggers, 40+ index, 4 vues, 5 vues matérialisées' AS features;
+       '28 tables, 10+ triggers, 40+ index, 4 vues, 5 vues matérialisées' AS features;
