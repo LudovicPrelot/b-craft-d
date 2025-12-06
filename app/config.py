@@ -9,6 +9,7 @@ from pathlib import Path
 # Racine du projet
 BASE_DIR = Path(__file__).resolve().parent
 API_BASE_URL = os.getenv("API_BASE_URL")
+MONGO_URL = os.getenv("MONGO_URL")
 
 # ---------------------------------------------------------------------------
 # ENVIRONMENT VARIABLES (lecture simple) – valeurs par défaut en dev
@@ -44,24 +45,15 @@ LOGS_DIR = BASE_DIR / "logs"
 
 TEMPLATES_DIR = WEB_INTERFACE_DIR / "templates"
 STATIC_DIR = WEB_INTERFACE_DIR / "static"
+MEDIA_DIR = WEB_INTERFACE_DIR / "media"
 
 LAYOUT_TEMPLATES_DIR = TEMPLATES_DIR / "layout"
+PICTURES_DIR = MEDIA_DIR / "pictures"
 
 ADMIN_TEMPLATES_DIR = TEMPLATES_DIR / "admin"
 MODERATOR_TEMPLATES_DIR = TEMPLATES_DIR / "moderator"
 USER_TEMPLATES_DIR = TEMPLATES_DIR / "user"
 PUBLIC_TEMPLATES_DIR = TEMPLATES_DIR / "public"
-
-FAILED_LOGINS_FILE = STORAGE_DIR / "failed_logins.json"
-LOOT_ENVIRONMENT_FILE = STORAGE_DIR / "loot_environment.json"
-LOOT_TABLES_FILE = STORAGE_DIR / "loot_tables.json"
-PROFESSIONS_FILE = STORAGE_DIR / "professions.json"
-QUESTS_FILE = STORAGE_DIR / "quests.json"
-RECIPES_FILE = STORAGE_DIR / "recipes.json"
-REFRESH_TOKENS_FILE = STORAGE_DIR / "refresh_tokens.json"
-RESOURCES_FILE = STORAGE_DIR / "resources.json"
-SETTINGS_FILE = STORAGE_DIR / "settings.json"
-USERS_FILE = STORAGE_DIR / "users.json"
 
 # Make sure dirs exist in dev
 STORAGE_DIR.mkdir(parents=True, exist_ok=True)
@@ -69,8 +61,11 @@ WEB_INTERFACE_DIR.mkdir(parents=True, exist_ok=True)
 LOGS_DIR.mkdir(parents=True, exist_ok=True)
 TEMPLATES_DIR.mkdir(parents=True, exist_ok=True)
 STATIC_DIR.mkdir(parents=True, exist_ok=True)
+MEDIA_DIR.mkdir(parents=True, exist_ok=True)
 
 LAYOUT_TEMPLATES_DIR.mkdir(parents=True, exist_ok=True)
+PICTURES_DIR.mkdir(parents=True, exist_ok=True)
+
 ADMIN_TEMPLATES_DIR.mkdir(parents=True, exist_ok=True)
 MODERATOR_TEMPLATES_DIR.mkdir(parents=True, exist_ok=True)
 USER_TEMPLATES_DIR.mkdir(parents=True, exist_ok=True)

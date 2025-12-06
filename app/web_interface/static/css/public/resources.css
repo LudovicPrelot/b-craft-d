@@ -1,0 +1,24 @@
+/* static/css/public/resources.css */
+
+.resources-grid {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.resource-card {
+    border: 1px solid #bbb;
+    padding: 1rem;
+    border-radius: 8px;
+    background: #eef2f4;
+    transition: 0.2s;
+}
+
+.resource-card:hover {
+    background: #fff;
+    box-shadow: 0 0 6px rgba(0,0,0,0.15);
+}
+
+.error {
+    color: crimson;
+}

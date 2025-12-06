@@ -1,11 +1,6 @@
-# app/main.py
+# app/main.py (VERSION POSTGRESQL)
 """
-Point d'entrée FastAPI principal.
- - Gère le routing global
- - Charge les templates Jinja2
- - Monte les fichiers statiques
- - Ajoute middlewares + logging + handlers d’erreurs
- - Sépare API et routes FRONT (pages/)
+Point d'entrée FastAPI principal avec PostgreSQL.
 """
 
 from fastapi import FastAPI, Request
@@ -14,27 +9,80 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
+from contextlib import asynccontextmanager
 
 from utils.logger import get_logger
-from scripts import fix_bugs as fix_bugs
+from utils.auth import cleanup_expired_tokens
+from utils.settings import init_default_settings
+from utils.feature_flags import init_feature_flags
+from database.connection import SessionLocal, init_db, check_db_connection
 
 # API Routers
 from routes.api import router as api_router
 
-# FRONT Routers (nouveaux)
+# FRONT Routers
 from routes.front import router as front_router
 
 import config
 
-# Initialise le logger pour ce module
 logger = get_logger(__name__)
+
+
+# ============================================================================
+# LIFESPAN (remplace les events startup/shutdown)
+# ============================================================================
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """
+    Gère le cycle de vie de l'application.
+    - startup: Initialise la DB + nettoie les tokens expirés
+    - shutdown: Nettoyage si nécessaire
+    """
+    # STARTUP
+    logger.info("🚀 Démarrage de B-CraftD...")
+    
+    # Vérifie la connexion DB
+    if not check_db_connection():
+        logger.error("❌ Impossible de se connecter à PostgreSQL")
+        raise RuntimeError("Database connection failed")
+    
+    # Initialise les tables
+    init_db()
+    
+    
+    try:
+        db = SessionLocal()
+        # deleted = cleanup_expired_tokens(db) # Nettoie les tokens expirés au démarrage
+        # if deleted > 0:
+        #     logger.info(f"🧹 {deleted} refresh token(s) expiré(s) nettoyé(s)")
+        
+        # init_feature_flags(db)  # Crée les feature flags par défaut
+        # init_default_settings(db)  # Crée les settings par défaut
+        db.close()
+
+    except Exception as e:
+        logger.warning(f"⚠️  Erreur lors du nettoyage des tokens: {e}")
+
+    yield
+    
+    logger.info("✅ Application prête!")
+    
+    # SHUTDOWN
+    logger.info("👋 Arrêt de l'application...")
+
+
+# ============================================================================
+# APP
+# ============================================================================
 
 app = FastAPI(
     title="B-CraftD – Backend + Front",
-    description="API pour un système de crafting réaliste",
-    version="0.1.0",
+    description="API pour un système de crafting réaliste avec PostgreSQL",
+    version="0.2.0",
     docs_url="/docs",
-    redoc_url="/redoc"
+    redoc_url="/redoc",
+    lifespan=lifespan  # ✅ Remplace @app.on_event("startup")
 )
 
 logger.info("🏗️  Initialisation de l'application FastAPI")
@@ -48,7 +96,7 @@ templates = Jinja2Templates(directory=str(config.TEMPLATES_DIR))
 
 
 # -------------------------
-# Exception Handlers (gestion d'erreurs centralisée)
+# Exception Handlers
 # -------------------------
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
@@ -91,7 +139,7 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 
 
 # -------------------------
-# Middleware de logging des requêtes
+# Middleware de logging
 # -------------------------
 
 @app.middleware("http")
@@ -102,7 +150,7 @@ async def front_security_middleware(request: Request, call_next):
         if response.status_code == 401:
             return RedirectResponse("/public/login")
         if response.status_code == 403:
-            return templates.TemplateResponse("errors/forbidden.html", {"request": request})
+            return templates.TemplateResponse("errors/403.html", {"request": request})
         if response.status_code == 404:
             return templates.TemplateResponse("errors/404.html", {"request": request})
         if response.status_code == 500:
@@ -114,6 +162,7 @@ async def front_security_middleware(request: Request, call_next):
         return RedirectResponse("/public/login")
     except Exception:
         return templates.TemplateResponse("errors/500.html", {"request": request})
+
 
 @app.middleware("http")
 async def log_requests(request: Request, call_next):
@@ -127,39 +176,52 @@ async def log_requests(request: Request, call_next):
 
 
 # --------------------------------------
-# API Routers
+# Routers
 # --------------------------------------
 app.include_router(api_router)
-
-logger.info("🌐 Chargement des routes de pages HTML...")
-# --------------------------------------
-# FRONT Routers (Pages HTML)
-# --------------------------------------
 app.include_router(front_router)
 
+
 # -------------------------
-# Debug script
+# Error handlers
 # -------------------------
 
 @app.exception_handler(404)
 async def custom_404_handler(request, exc):
     """Log toutes les erreurs 404."""
-    logger.debug( f"⚠️  Erreur 404 sur {request.method} {request.url.path}")
+    logger.debug(f"⚠️  Erreur 404 sur {request.method} {request.url.path}")
     return templates.TemplateResponse(
         "errors/404.html",
         {"request": request},
         status_code=404
     )
 
+
 @app.exception_handler(500)
 async def custom_500_handler(request, exc):
     """Log toutes les erreurs 500."""
-    logger.debug( f"⚠️  Erreur 500 sur {request.method} {request.url.path}")
+    logger.debug(f"⚠️  Erreur 500 sur {request.method} {request.url.path}")
     return templates.TemplateResponse(
         "errors/500.html",
         {"request": request, "message": str(exc)},
         status_code=500
     )
+
+
+# -------------------------
+# Health check
+# -------------------------
+
+@app.get("/health")
+def health_check():
+    """Endpoint de santé pour monitoring."""
+    db_ok = check_db_connection()
+    
+    return {
+        "status": "healthy" if db_ok else "unhealthy",
+        "database": "connected" if db_ok else "disconnected",
+        "version": "0.2.0"
+    }
 
 
 logger.info("✅ Application FastAPI prête!")
